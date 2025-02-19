@@ -5,7 +5,7 @@ from telegram.ext import Application, CommandHandler, CallbackContext
 
 TELEGRAM_BOT_TOKEN = '8146585403:AAFJYRvEErZ9NuZ9ufyf8cvXyWOzs0lIB4k'  # Replace with your bot token
 OWNER_USERNAME = "Riyahacksyt"  # Replace with your Telegram username (without @)
-ALLOWED_GROUP_ID = -1002380705719  # Replace with your allowed group ID
+ALLOWED_GROUP_ID = -1002491572572  # Replace with your allowed group ID
 
 is_attack_running = False  
 max_duration = 300  
