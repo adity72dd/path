@@ -8,8 +8,8 @@ OWNER_USERNAME = "Riyahacksyt"  # Replace with your Telegram username (without @
 ALLOWED_GROUP_ID = -1002491572572  # Replace with your allowed group ID
 
 is_attack_running = False  
-max_duration = 300  
-daily_attack_limit = 30  
+max_duration = 120  
+daily_attack_limit = 8  
 user_attacks = {}  
 
 # Check if bot is used in the allowed group
