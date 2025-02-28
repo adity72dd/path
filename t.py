@@ -1,7 +1,7 @@
 import asyncio
 import logging
-from telegram import Update  # Import Update class
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext  # Import CallbackContext
+from telegram._updates import Update  # Correct import for Update
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext  # Correct import for CallbackContext
 
 # Logging Configuration
 logging.basicConfig(
@@ -15,14 +15,14 @@ OWNER_USERNAME = "Riyahacksyt"  # Replace with your Telegram username (without @
 ALLOWED_GROUP_ID = -1002491572572  # Replace with your allowed group ID
 
 # Attack Settings
-MAX_THREADS = 20  # Maximum threads limit
-max_duration = 30  # Maximum attack duration
-daily_attack_limit = 15
+MAX_THREADS = 3000  # Maximum threads limit
+max_duration = 200  # Maximum attack duration
+daily_attack_limit = 8
 
 # Default Attack Parameters
-DEFAULT_THREADS = 100
+DEFAULT_THREADS = 300
 DEFAULT_PACKET_SIZE = 8
-DEFAULT_PACKETS_PER_THREAD = 10
+DEFAULT_PACKETS_PER_THREAD = 20
 
 # Attack & Feedback System
 attack_running = False
