@@ -12,7 +12,7 @@ logging.basicConfig(
 # Bot Configuration
 TELEGRAM_BOT_TOKEN = '8146585403:AAFJYRvEErZ9NuZ9ufyf8cvXyWOzs0lIB4k'  # Replace with your bot token
 OWNER_USERNAME = "Riyahacksyt"  # Replace with your Telegram username (without @)
-ALLOWED_GROUP_ID = -1002491572572  # Replace with your allowed group ID
+ALLOWED_GROUP_ID = -1002283210199  # Replace with your allowed group ID
 
 # Attack Settings
 MAX_THREADS = 3000  # Maximum threads limit
