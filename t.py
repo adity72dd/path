@@ -17,12 +17,12 @@ ALLOWED_GROUP_ID = -1002491572572  # Replace with your allowed group ID
 # Attack Settings
 MAX_THREADS = 3000  # Maximum threads limit
 max_duration = 200  # Maximum attack duration
-daily_attack_limit = 8
+daily_attack_limit = 15
 
 # Default Attack Parameters
-DEFAULT_THREADS = 300
-DEFAULT_PACKET_SIZE = 8
-DEFAULT_PACKETS_PER_THREAD = 20
+DEFAULT_THREADS = 1500
+DEFAULT_PACKET_SIZE = 128
+DEFAULT_PACKETS_PER_THREAD = 2000
 
 # Attack & Feedback System
 attack_running = False
