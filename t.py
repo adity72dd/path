@@ -2,7 +2,7 @@ import os
 import asyncio
 import logging
 import uuid
-from telegram import Update, ReplyKeyboardMarkup
+from telegram import Update, ReplyKeyboardMarkup, error
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 
 # Suppress HTTP request logs
@@ -19,7 +19,7 @@ logging.basicConfig(
 TELEGRAM_BOT_TOKEN = '8146585403:AAFJYRvEErZ9NuZ9ufyf8cvXyWOzs0lIB4k'  # Replace with your bot token
 OWNER_USERNAME = "Riyahacksyt"  # Replace with your Telegram username (without @)
 ALLOWED_GROUP_ID = -1002491572572  # Replace with your allowed group ID
-MAX_THREADS = 2500  # Default max threads
+MAX_THREADS = 2000  # Default max threads
 max_duration = 150  # Default max attack duration
 daily_attack_limit = 3
 
@@ -224,11 +224,17 @@ async def run_attack(chat_id, ip, port, duration, threads, context, user_id):
     finally:
         attack_running = False
         if feedback_waiting.get(user_id):
-            await context.bot.send_message(chat_id=chat_id, text=f"❌ *You didn't send feedback! You are banned from using the attack command for 10 minutes!*", parse_mode='Markdown')
+            try:
+                await context.bot.send_message(chat_id=chat_id, text=f"❌ *You didn't send feedback! You are banned from using the attack command for 10 minutes!*", parse_mode='Markdown')
+            except error.TimedOut:
+                logging.error("Failed to send feedback message: Timed out")
             attack_ban_list[user_id] = True
             asyncio.create_task(unban_user_after_delay(user_id, 600))  # 10 minutes delay
         else:
-            await context.bot.send_message(chat_id=chat_id, text="✅ *Attack Finished, now next attack!*", parse_mode='Markdown')
+            try:
+                await context.bot.send_message(chat_id=chat_id, text="✅ *Attack Finished, now next attack!*", parse_mode='Markdown')
+            except error.TimedOut:
+                logging.error("Failed to send attack completion message: Timed out")
 
 # Unban user after delay
 async def unban_user_after_delay(user_id, delay):
@@ -240,7 +246,10 @@ async def handle_photo(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
     if user_id in feedback_waiting:
         del feedback_waiting[user_id]
-        await update.message.reply_text("✅ *Thanks for your feedback!*", parse_mode='Markdown')
+        try:
+            await update.message.reply_text("✅ *Thanks for your feedback!*", parse_mode='Markdown')
+        except error.TimedOut:
+            logging.error("Failed to send feedback message: Timed out")
 
 # Reset User Attacks
 async def reset_attacks(update: Update, context: CallbackContext):
@@ -474,7 +483,7 @@ async def handle_referral(update: Update, context: CallbackContext):
 
 # Main Bot Setup
 def main():
-    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+    application = Application.builder().token(TELEGRAM_BOT_TOKEN).read_timeout(20).write_timeout(20).build()
     application.add_handler(CommandHandler("start", handle_referral))  # Handle referrals
     application.add_handler(CommandHandler("attack", attack))
     application.add_handler(CommandHandler("resetattacks", reset_attacks))
