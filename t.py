@@ -20,7 +20,7 @@ TELEGRAM_BOT_TOKEN = '8146585403:AAFJYRvEErZ9NuZ9ufyf8cvXyWOzs0lIB4k'  # Replace
 OWNER_USERNAME = "Riyahacksyt"  # Replace with your Telegram username (without @)
 ALLOWED_GROUP_ID = -1002491572572  # Replace with your allowed group ID
 MAX_THREADS = 2000  # Default max threads
-max_duration = 150  # Default max attack duration
+max_duration = 200  # Default max attack duration
 daily_attack_limit = 3
 
 # Attack & Feedback System
