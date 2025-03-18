@@ -2,7 +2,6 @@ import os
 import time
 import logging
 import asyncio
-import multiprocessing
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext, ConversationHandler
 from telegram.helpers import escape_markdown
@@ -21,8 +20,8 @@ logging.basicConfig(
 TELEGRAM_BOT_TOKEN = '7694477480:AAHfV8Ih8LWcf4CwuqsdhRZmPzZZtUXOyaM'  # Replace with your bot token
 OWNER_USERNAME = "Riyahacksyt"  # Replace with your Telegram username (without @)
 ALLOWED_GROUP_ID = -1002283210199  # Replace with your allowed group ID
-MAX_THREADS = 1500  # Default max threads
-max_duration = 150  # Default max attack duration
+MAX_THREADS = 2000  # Default max threads
+max_duration = 240  # Default max attack duration
 
 # File to store key data
 KEY_FILE = "keys.txt"
