@@ -60,21 +60,21 @@ KEY_PRICES = {
 global_cooldown = 0  # Global cooldown in seconds
 last_attack_time = 0  # Timestamp of the last attack
 
-# Custom Keyboard for Regular Users
-regular_user_keyboard = [
-    ['Start', 'Attack', 'Redeem Key'],
-    ['Rules']
+# Custom Keyboard for All Users in Group Chat
+group_user_keyboard = [
+    ['Start', 'Attack'],
+    ['Redeem Key', 'Rules']
 ]
-regular_user_markup = ReplyKeyboardMarkup(regular_user_keyboard, resize_keyboard=True)
+group_user_markup = ReplyKeyboardMarkup(group_user_keyboard, resize_keyboard=True)
 
-# Custom Keyboard for Resellers
+# Custom Keyboard for Resellers in Private Chat
 reseller_keyboard = [
     ['Start', 'Attack', 'Redeem Key'],
     ['Rules', 'Balance', 'Generate Key']
 ]
 reseller_markup = ReplyKeyboardMarkup(reseller_keyboard, resize_keyboard=True)
 
-# Custom Keyboard for Owner
+# Custom Keyboard for Owner in Private Chat
 owner_keyboard = [
     ['Start', 'Attack', 'Redeem Key'],
     ['Rules', 'Set Duration', 'Set Threads'],
@@ -155,19 +155,33 @@ def is_owner(update: Update):
 def is_reseller(update: Update):
     return update.effective_user.id in resellers
 
+# Check if the user is authorized to use the bot in private chat
+def is_authorized_user(update: Update):
+    return is_owner(update) or is_reseller(update)
+
 # Start Command
 async def start(update: Update, context: CallbackContext):
     chat = update.effective_chat
 
-    # If the user starts the bot in a private chat, send the main channel link
+    # If the user starts the bot in a private chat
     if chat.type == "private":
-        main_channel_link = "https://t.me/+wnHGZwkgKBo0ZDdl"  # Replace with your main channel link
-        await update.message.reply_text(
-            f"🌟 *Welcome!* 🌟\n\n"
-            f"🔗 *Join our main channel for free 180 sec server hack:* {main_channel_link}\n\n"
-            "*Use the bot in the allowed group for attacks!*",
-            parse_mode='Markdown'
+        if not is_authorized_user(update):
+            # Normal users get a message saying the bot is not authorized
+            await update.message.reply_text("❌ *This bot is not authorized to use here.*", parse_mode='Markdown')
+            return
+
+        # If the user is authorized (owner or reseller), show the start message
+        message = (
+            "*🔥 Welcome to the battlefield! 🔥*\n\n"
+            "*Use Attack to start an attack!*\n\n"
+            "*💥 Let the war begin!*"
         )
+
+        # Show different keyboards for owner and resellers
+        if is_owner(update):
+            await update.message.reply_text(text=message, parse_mode='Markdown', reply_markup=owner_markup)
+        else:
+            await update.message.reply_text(text=message, parse_mode='Markdown', reply_markup=reseller_markup)
         return
 
     # If the user starts the bot in the allowed group
@@ -180,13 +194,8 @@ async def start(update: Update, context: CallbackContext):
         "*💥 Let the war begin!*"
     )
 
-    # Show different keyboards for owner, resellers, and regular users
-    if is_owner(update):
-        await update.message.reply_text(text=message, parse_mode='Markdown', reply_markup=owner_markup)
-    elif is_reseller(update):
-        await update.message.reply_text(text=message, parse_mode='Markdown', reply_markup=reseller_markup)
-    else:
-        await update.message.reply_text(text=message, parse_mode='Markdown', reply_markup=regular_user_markup)
+    # Show the same keyboard for all users in the group
+    await update.message.reply_text(text=message, parse_mode='Markdown', reply_markup=group_user_markup)
 
 # Generate Key Command - Start Conversation
 async def generate_key_start(update: Update, context: CallbackContext):
@@ -233,6 +242,10 @@ async def generate_key_duration(update: Update, context: CallbackContext):
 
 # Redeem Key Command - Start Conversation
 async def redeem_key_start(update: Update, context: CallbackContext):
+    if not is_allowed_group(update):
+        await update.message.reply_text("❌ *This command can only be used in the allowed group!*", parse_mode='Markdown')
+        return ConversationHandler.END
+
     await update.message.reply_text("⚠️ *Enter the key to redeem.*", parse_mode='Markdown')
     return GET_KEY
 
@@ -259,6 +272,20 @@ async def redeem_key_input(update: Update, context: CallbackContext):
 
 # Attack Command - Start Conversation
 async def attack_start(update: Update, context: CallbackContext):
+    chat = update.effective_chat
+
+    # If the user tries to use the attack command in a private chat
+    if chat.type == "private":
+        if not is_authorized_user(update):
+            # Normal users get a message saying the bot is not authorized
+            await update.message.reply_text("❌ *This bot is not authorized to use here.*", parse_mode='Markdown')
+            return ConversationHandler.END
+
+    # If the user tries to use the attack command outside the allowed group
+    if not is_allowed_group(update):
+        await update.message.reply_text("❌ *This command can only be used in the allowed group!*", parse_mode='Markdown')
+        return ConversationHandler.END
+
     global last_attack_time, global_cooldown
 
     # Check if the cooldown period is active
@@ -364,33 +391,57 @@ async def set_cooldown_input(update: Update, context: CallbackContext):
         return ConversationHandler.END  # Terminate the conversation
     return ConversationHandler.END
 
-# Show Active Keys
+# Show Active, Redeemed, and Expired Keys
 async def show_keys(update: Update, context: CallbackContext):
     if not (is_owner(update) or is_reseller(update)):
         await update.message.reply_text("❌ *Only the owner or resellers can view keys!*", parse_mode='Markdown')
         return
 
+    current_time = time.time()
     active_keys = []
-    for key, key_info in keys.items():
-        if key_info['expiration_time'] > time.time():
-            # Escape special characters in the key
-            escaped_key = escape_markdown(key, version=2)
-            generated_by_username = escape_markdown((await context.bot.get_chat(key_info['generated_by'])).username, version=2) if key_info['generated_by'] else "Unknown"
-            active_keys.append(f"🔑 `{escaped_key}` (Generated by @{generated_by_username}, Expires in {int((key_info['expiration_time'] - time.time()) // 3600)} hours)")
-
     redeemed_keys = []
-    for key, key_info in redeemed_keys_info.items():
-        # Escape special characters in the key and username
-        escaped_key = escape_markdown(key, version=2)
-        generated_by_username = escape_markdown((await context.bot.get_chat(key_info['generated_by'])).username, version=2)
-        redeemed_by_username = escape_markdown((await context.bot.get_chat(key_info['redeemed_by'])).username, version=2)
-        redeemed_keys.append(f"🔑 `{escaped_key}` (Generated by @{generated_by_username}, Redeemed by @{redeemed_by_username})")
+    expired_keys = []
 
-    if not active_keys and not redeemed_keys:
-        await update.message.reply_text("❌ *No active or redeemed keys found!*", parse_mode='Markdown')
+    # Categorize keys
+    for key, key_info in keys.items():
+        if key_info['expiration_time'] > current_time:
+            # Active keys
+            remaining_time = key_info['expiration_time'] - current_time
+            hours = int(remaining_time // 3600)
+            minutes = int((remaining_time % 3600) // 60)
+            generated_by_username = escape_markdown((await context.bot.get_chat(key_info['generated_by'])).username, version=2) if key_info['generated_by'] else "Unknown"
+            active_keys.append(f"🔑 `{escape_markdown(key, version=2)}` (Generated by @{generated_by_username}, Expires in {hours}h {minutes}m)")
+        else:
+            # Expired keys
+            expired_keys.append(f"🔑 `{escape_markdown(key, version=2)}` (Expired)")
+
+    for key, key_info in redeemed_keys_info.items():
+        if key_info['redeemed_by'] in redeemed_users:
+            # Redeemed keys
+            redeemed_by_username = escape_markdown((await context.bot.get_chat(key_info['redeemed_by'])).username, version=2)
+            generated_by_username = escape_markdown((await context.bot.get_chat(key_info['generated_by'])).username, version=2)
+            redeemed_keys.append(f"🔑 `{escape_markdown(key, version=2)}` (Generated by @{generated_by_username}, Redeemed by @{redeemed_by_username})")
+
+    # Prepare the message
+    message = "*🗝️ Active Keys:*\n"
+    if active_keys:
+        message += "\n".join(active_keys) + "\n\n"
     else:
-        message = "*🗝️ Active Keys:*\n" + "\n".join(active_keys) + "\n\n*🗝️ Redeemed Keys:*\n" + "\n".join(redeemed_keys)
-        await update.message.reply_text(message, parse_mode='Markdown')
+        message += "No active keys found.\n\n"
+
+    message += "*🗝️ Redeemed Keys:*\n"
+    if redeemed_keys:
+        message += "\n".join(redeemed_keys) + "\n\n"
+    else:
+        message += "No redeemed keys found.\n\n"
+
+    message += "*🗝️ Expired Keys:*\n"
+    if expired_keys:
+        message += "\n".join(expired_keys)
+    else:
+        message += "No expired keys found."
+
+    await update.message.reply_text(message, parse_mode='Markdown')
 
 # Set Duration Command - Start Conversation
 async def set_duration_start(update: Update, context: CallbackContext):
@@ -596,7 +647,13 @@ async def rules(update: Update, context: CallbackContext):
 
 # Handle Button Clicks
 async def handle_button_click(update: Update, context: CallbackContext):
+    chat = update.effective_chat
     query = update.message.text
+
+    # If the user is a normal user in a private chat
+    if chat.type == "private" and not is_authorized_user(update):
+        await update.message.reply_text("❌ *This bot is not authorized to use here.*", parse_mode='Markdown')
+        return
 
     # Map button text to commands
     if query == 'Start':
