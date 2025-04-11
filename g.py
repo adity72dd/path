@@ -524,7 +524,7 @@ async def attack_start(update: Update, context: CallbackContext):
         return ConversationHandler.END
 
     user_id = update.effective_user.id
-    has_special_key = user_id in redeemed_users and (isinstance(redeemed_users[user_id], dict) and redeemed_users[user_id].get('is_special')
+    has_special_key = user_id in redeemed_users and (isinstance(redeemed_users[user_id], dict) and redeemed_users[user_id].get('is_special'))
     
     if bot_open or user_id in redeemed_users:
         await update.message.reply_text(
