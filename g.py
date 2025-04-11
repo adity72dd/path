@@ -30,43 +30,11 @@ SPECIAL_MAX_THREADS = 2000
 # Key Prices
 KEY_PRICES = {
     "1H": 5,
-    "2H": 10,  # Price for 1-hour key
-    "3H": 15,  # Price for 1-hour key
-    "4H": 20,  # Price for 1-hour key
-    "5H": 25,  # Price for 1-hour key
-    "6H": 30,  # Price for 1-hour key
-    "7H": 35,  # Price for 1-hour key
-    "8H": 40,  # Price for 1-hour key
-    "9H": 45,  # Price for 1-hour key
-    "10H": 50, # Price for 1-hour key
-    "1D": 60,  # Price for 1-day key
-    "2D": 100,  # Price for 1-day key
-    "3D": 160, # Price for 1-day key
-    "5D": 250, # Price for 2-day key
-    "7D": 320, # Price for 2-day key
-    "15D": 700, # Price for 2-day key
-    "30D": 1250, # Price for 2-day key
-    "60D": 2000, # Price for 2-day key,
 }
 
 # Special Key Prices
 SPECIAL_KEY_PRICES = {
-    "1D": 70,  # 7 days special key price
-    "2D": 130,  # 30 days special key price
-    "3D": 250,  # 30 days special key price
-    "4D": 300,  # 30 days special key price
-    "5D": 400,  # 30 days special key price
-    "6D": 500,  # 30 days special key price
-    "7D": 550,  # 30 days special key price
-    "8D": 600,  # 30 days special key price
-    "9D": 750,  # 30 days special key price
-    "10D": 800,  # 30 days special key price
-    "11D": 850,  # 30 days special key price
-    "12D": 900,  # 30 days special key price
-    "13D": 950,  # 30 days special key price
-    "14D": 1000,  # 30 days special key price
-    "15D": 1050,  # 30 days special key price
-    "30D": 1500,  # 30 days special key price
+    "1D": 70,
 }
 
 # Image configuration
@@ -79,142 +47,9 @@ START_IMAGES = [
             '💻 *Example:* `20.235.43.9 14533 120 100`\n\n'
             '💀 *Bsdk threads ha 100 dalo time 120 dalne ke baad* 💀\n\n'
             '🔑 *Need keys? DM @Riyahacksyt to purchase*\n\n'
-            '⚠️ *RITIK KI MUMMY KI CHUT BADI MAJABUT* ⚠️'
+            '⚠️ *RITIK KI MUMMY KI CHUT BADI MAZBOOT* ⚠️'
         )
     },
-    {
-        'url': 'https://www.craiyon.com/image/KC4CfJPuQTuKdSdlrkiczg',
-        'caption':(
-            '🔥 *Welcome to the Ultimate DDoS Bot!*\n\n'
-            '👑 *Owner:* @Riyahacksyt\n\n'
-            '💻 *Example:* `20.235.43.9 14533 120 100`\n\n'
-            '💀 *Bsdk threads ha 100 dalo time 120 dalne ke baad* 💀\n\n'
-            '🔑 *Need keys? DM @Riyahacksyt to purchase*\n\n'
-            '⚠️ *RIYAAZ RITIK KA DUSRA BAAP🤬* ⚠️'
-        )
-    },
-    {
-        'url': 'https://www.craiyon.com/image/A3ol0NRAQc2N3C62DXcfpA',
-        'caption': (
-            '🔥 *Welcome to the Ultimate DDoS Bot!*\n\n'
-            '👑 *Owner:* @Riyahacksyt\n\n'
-            '💻 *Example:* `20.235.43.9 14533 120 100`\n\n'
-            '💀 *Bsdk threads ha 100 dalo time 120 dalne ke baad* 💀\n\n'
-            '🔑 *Need keys? DM @Riyahacksyt to purchase*\n\n'
-            '⚠️ *RITIK KI MAMMY CHUT ME HATHI KA LUND🤬* ⚠️'
-        )
-    },
-    {
-        'url': 'https://www.craiyon.com/image/IErJnUlDTkCvcWBeTZX8qQ',
-        'caption': (
-            '🔥 *Welcome to the Ultimate DDoS Bot!*\n\n'
-            '👑 *Owner:* @Riyahacksyt\n\n'
-            '💻 *Example:* `20.235.43.9 14533 120 100`\n\n'
-            '💀 *Bsdk threads ha 100 dalo time 120 dalne ke baad* 💀\n\n'
-            '🔑 *Need keys? DM @Riyahacksyt to purchase*\n\n'
-            '⚠️ *RAJA RITIK KA PEHLA BAAP🤬* ⚠️'
-        )
-    },
-    {
-        'url': 'https://www.craiyon.com/image/073Vnr7jQpGUkSMr6Rrvjw',
-        'caption': (
-            '🔥 *Welcome to the Ultimate DDoS Bot!*\n\n'
-            '👑 *Owner:* @Riyahacksyt\n\n'
-            '💻 *Example:* `20.235.43.9 14533 120 100`\n\n'
-            '💀 *Bsdk threads ha 100 dalo time 120 dalne ke baad* 💀\n\n'
-            '🔑 *Need keys? DM @Riyahacksyt to purchase*\n\n'
-            '⚠️ *RITIK KI MUMMY KO MOTE LUND SE CHODNE WALA S2 FLASH* ⚠️'
-        )
-    },
-    {
-        'url': 'https://www.craiyon.com/image/XgSNsdopTYGnlDsVC4PnSw',
-        'caption': (
-            '🔥 *Welcome to the Ultimate DDoS Bot!*\n\n'
-            '👑 *Owner:* @Riyahacksyt\n\n'
-            '💻 *Example:* `20.235.43.9 14533 120 100`\n\n'
-            '💀 *Bsdk threads ha 100 dalo time 120 dalne ke baad* 💀\n\n'
-            '🔑 *Need keys? DM @Riyahacksyt to purchase*\n\n'
-            '⚠️ *DEMON NE RITIK KI MUMMY KE BLOUSE SILNE KE BAHANE USKE BOOBS DABA DIYE* ⚠️'
-        )
-    },
-    {
-        'url': 'https://www.craiyon.com/image/JbBsmO9RQcy2CKQiOf_MOw',
-        'caption': (
-            '🔥 *Welcome to the Ultimate DDoS Bot!*\n\n'
-            '👑 *Owner:* @Riyahacksyt\n\n'
-            '💻 *Example:* `20.235.43.9 14533 120 100`\n\n'
-            '💀 *Bsdk threads ha 100 dalo time 120 dalne ke baad* 💀\n\n'
-            '🔑 *Need keys? DM @Riyahacksyt to purchase*\n\n'
-            '⚠️ *4 LOGO NE MILKE RITIK KI MUMMY KA KIYA RAPE CHUT PHAAD DI* ⚠️'
-        )
-    },
-    {
-        'url': 'https://www.craiyon.com/image/yF1wqEx7TuuAfoBLK0Zmag',
-        'caption': (
-            '🔥 *Welcome to the Ultimate DDoS Bot!*\n\n'
-            '👑 *Owner:* @Riyahacksyt\n\n'
-            '💻 *Example:* `20.235.43.9 14533 120 100`\n\n'
-            '💀 *Bsdk threads ha 100 dalo time 120 dalne ke baad* 💀\n\n'
-            '🔑 *Need keys? DM @Riyahacksyt to purchase*\n\n'
-            '⚠️ *MERE GROUP KA HAR BANDA RITIK KI MUMMY KA YAAR HA* ⚠️'
-        )
-    },
-    {
-        'url': 'https://www.craiyon.com/image/XuS2HNGdTFKqGkpAGzzrqg',
-        'caption': (
-            '🔥 *Welcome to the Ultimate DDoS Bot!*\n\n'
-            '👑 *Owner:* @Riyahacksyt\n\n'
-            '💻 *Example:* `20.235.43.9 14533 120 100`\n\n'
-            '💀 *Bsdk threads ha 100 dalo time 120 dalne ke baad* 💀\n\n'
-            '🔑 *Need keys? DM @Riyahacksyt to purchase*\n\n'
-            '⚠️ *RITIK KI MUMMY KI GND KE CHED KA SIZE KITNA HA* ⚠️'
-        )
-    },
-    {
-        'url': 'https://www.craiyon.com/image/iRyN9awaQIeFgjqVVucIlA',
-        'caption': (
-            '🔥 *Welcome to the Ultimate DDoS Bot!*\n\n'
-            '👑 *Owner:* @Riyahacksyt\n\n'
-            '💻 *Example:* `20.235.43.9 14533 120 100`\n\n'
-            '💀 *Bsdk threads ha 100 dalo time 120 dalne ke baad* 💀\n\n'
-            '🔑 *Need keys? DM @Riyahacksyt to purchase*\n\n'
-            '⚠️ *⚠️LATEST NEWS⚠️ RITIK KI MUMMY KO 9000 THREDS PE CHODA * ⚠️'
-        )
-    },
-    {
-        'url': 'https://www.craiyon.com/image/bAhq_xScRm-wk-hD9GzUrw',
-        'caption': (
-            '🔥 *Welcome to the Ultimate DDoS Bot!*\n\n'
-            '👑 *Owner:* @Riyahacksyt\n\n'
-            '💻 *Example:* `20.235.43.9 14533 120 100`\n\n'
-            '💀 *Bsdk threads ha 100 dalo time 120 dalne ke baad* 💀\n\n'
-            '🔑 *Need keys? DM @Riyahacksyt to purchase*\n\n'
-            '⚠️ *⚠️LATEST NEWS⚠️ RITIK KI MUMMY GHODE GAND MARWATE HUE PAKDI GYI* ⚠️'
-       )
-    },
-    {
-        'url': 'https://mobilehd.blob.core.windows.net/main/2017/02/girl-sexy-black-swimsuit-look-1080x1920.jpg',
-        'caption':(
-            '🔥 *Welcome to the Ultimate DDoS Bot!*\n\n'
-            '👑 *Owner:* @Riyahacksyt\n\n'
-            '💻 *Example:* `20.235.43.9 14533 120 100`\n\n'
-            '💀 *Bsdk threads ha 100 dalo time 120 dalne ke baad* 💀\n\n'
-            '🔑 *Need keys? DM @Riyahacksyt to purchase*\n\n'
-            '⚠️ *RITIK KA BAAP GAY HA USKA ASLI BAAP S2 FLASH HA* ⚠️'
-        )
-    },
-    {
-        'url': 'https://s2.best-wallpaper.net/wallpaper/iphone/2007/Beautiful-long-hair-girl-look-sunshine-summer_iphone_640x1136.jpg',
-        'caption':(
-            '🔥 *Welcome to the Ultimate DDoS Bot!*\n\n'
-            '👑 *Owner:* @Riyahacksyt\n\n'
-            '💻 *Example:* `20.235.43.9 14533 120 100`\n\n'
-            '💀 *Bsdk threads ha 100 dalo time 120 dalne ke baad* 💀\n\n'
-            '🔑 *Need keys? DM @Riyahacksyt to purchase*\n\n'
-            '⚠️ *S2 FLASH NE RITIK KI MUMMY KO 1024 BYTE PE CHOD OR ABB CHUT KA SIZE 50CM HA* ⚠️'
-        )
-    },
-
 ]
 
 # File to store key data
@@ -262,7 +97,6 @@ owner_keyboard = [
 ]
 owner_markup = ReplyKeyboardMarkup(owner_keyboard, resize_keyboard=True)
 
-# RE MENU keyboard (shown when owner clicks RE MENU)
 re_menu_keyboard = [
     ['Add Reseller', 'Remove Reseller'],
     ['Add Coin', 'Back to Main']
@@ -284,7 +118,6 @@ GET_SET_COOLDOWN = 11
 GET_SPECIAL_KEY_DURATION = 12
 GET_SPECIAL_KEY_FORMAT = 13
 
-# Load key data from file
 def load_keys():
     if not os.path.exists(KEY_FILE):
         return
@@ -331,7 +164,6 @@ def load_keys():
                     'is_special': True
                 }
 
-# Save key data to file
 def save_keys():
     with open(KEY_FILE, "w") as file:
         for key, key_info in keys.items():
@@ -352,28 +184,22 @@ def save_keys():
                 else:
                     file.write(f"REDEEMED_KEY:{key},{key_info['generated_by']},{key_info['redeemed_by']},{redeemed_users[key_info['redeemed_by']]}\n")
 
-# Check if bot is used in the allowed group
 def is_allowed_group(update: Update):
     chat = update.effective_chat
     return chat.type in ['group', 'supergroup'] and chat.id == ALLOWED_GROUP_ID
 
-# Check if the user is the owner
 def is_owner(update: Update):
     return update.effective_user.username == OWNER_USERNAME
 
-# Check if the user is a reseller
 def is_reseller(update: Update):
     return update.effective_user.id in resellers
 
-# Check if the user is authorized to use the bot in private chat
 def is_authorized_user(update: Update):
     return is_owner(update) or is_reseller(update)
 
-# Get a random start image
 def get_random_start_image():
     return random.choice(START_IMAGES)
 
-# Open Bot Command
 async def open_bot(update: Update, context: CallbackContext):
     if not is_owner(update):
         await update.message.reply_text("❌ Only the owner can use this command!", parse_mode='Markdown')
@@ -390,7 +216,6 @@ async def open_bot(update: Update, context: CallbackContext):
         parse_mode='Markdown'
     )
 
-# Close Bot Command
 async def close_bot(update: Update, context: CallbackContext):
     if not is_owner(update):
         await update.message.reply_text("❌ Only the owner can use this command!", parse_mode='Markdown')
@@ -405,7 +230,6 @@ async def close_bot(update: Update, context: CallbackContext):
         parse_mode='Markdown'
     )
 
-# Start Command
 async def start(update: Update, context: CallbackContext):
     chat = update.effective_chat
     image = get_random_start_image()
@@ -449,7 +273,6 @@ async def start(update: Update, context: CallbackContext):
         reply_markup=group_user_markup
     )
 
-# Generate Key Command - Start Conversation
 async def generate_key_start(update: Update, context: CallbackContext):
     if not (is_owner(update) or is_reseller(update)):
         await update.message.reply_text(
@@ -467,7 +290,6 @@ async def generate_key_start(update: Update, context: CallbackContext):
     )
     return GET_DURATION
 
-# Generate Key Command - Handle Duration Input
 async def generate_key_duration(update: Update, context: CallbackContext):
     duration_str = update.message.text
 
@@ -512,7 +334,6 @@ async def generate_key_duration(update: Update, context: CallbackContext):
     )
     return ConversationHandler.END
 
-# Special Key Generation Flow
 async def generate_special_key_start(update: Update, context: CallbackContext):
     if not (is_owner(update) or is_reseller(update)):
         await update.message.reply_text(
@@ -541,7 +362,6 @@ async def generate_special_key_duration(update: Update, context: CallbackContext
             )
             return ConversationHandler.END
             
-        # Check if reseller has enough balance
         if is_reseller(update):
             user_id = update.effective_user.id
             price = SPECIAL_KEY_PRICES.get(f"{days}D", 9999)
@@ -573,16 +393,12 @@ async def generate_special_key_format(update: Update, context: CallbackContext):
     custom_format = update.message.text.strip().upper()
     days = context.user_data.get('special_key_days', 30)
     
-    # Deduct balance if reseller
     if is_reseller(update):
         user_id = update.effective_user.id
         price = SPECIAL_KEY_PRICES.get(f"{days}D", 9999)
         reseller_balances[user_id] -= price
     
-    # Generate random suffix
     random_suffix = os.urandom(2).hex().upper()
-    
-    # Create the key
     key = f"SPECIAL-{custom_format}-{random_suffix}"
     expiration_time = time.time() + (days * 86400)
     
@@ -601,12 +417,11 @@ async def generate_special_key_format(update: Update, context: CallbackContext):
         f"🧵 Max Threads: {SPECIAL_MAX_THREADS}\n\n"
         f"👑 Bot Owner: @Riyahacksyt\n"
         f"📩 DM for more special keys: @Riyahacksyt\n\n"
-        f"⚠️ This key provides enhanced attack capabilities!",
+        "⚠️ This key provides enhanced attack capabilities!",
         parse_mode='Markdown'
     )
     return ConversationHandler.END
 
-# Redeem Key Command - Start Conversation
 async def redeem_key_start(update: Update, context: CallbackContext):
     if not is_allowed_group(update):
         await update.message.reply_text(
@@ -624,7 +439,6 @@ async def redeem_key_start(update: Update, context: CallbackContext):
     )
     return GET_KEY
 
-# Redeem Key Command - Handle Key Input
 async def redeem_key_input(update: Update, context: CallbackContext):
     key = update.message.text
 
@@ -663,7 +477,7 @@ async def redeem_key_input(update: Update, context: CallbackContext):
             f"• Max Threads: {SPECIAL_MAX_THREADS}\n\n"
             f"👑 Bot Owner: @Riyahacksyt\n"
             f"📩 DM for more special keys: @Riyahacksyt\n\n"
-            f"⚡ Enjoy your enhanced attack capabilities!",
+            "⚡ Enjoy your enhanced attack capabilities!",
             parse_mode='Markdown'
         )
     else:
@@ -677,7 +491,6 @@ async def redeem_key_input(update: Update, context: CallbackContext):
     save_keys()
     return ConversationHandler.END
 
-# Attack Command - Start Conversation
 async def attack_start(update: Update, context: CallbackContext):
     chat = update.effective_chat
 
@@ -711,11 +524,8 @@ async def attack_start(update: Update, context: CallbackContext):
         return ConversationHandler.END
 
     user_id = update.effective_user.id
-
-    # Check if user has special key access
-    has_special_key = user_id in redeemed_users and (isinstance(redeemed_users[user_id], dict) and redeemed_users[user_id].get('is_special'))
+    has_special_key = user_id in redeemed_users and (isinstance(redeemed_users[user_id], dict) and redeemed_users[user_id].get('is_special')
     
-    # Allow regular attacks if bot is open or user has any key
     if bot_open or user_id in redeemed_users:
         await update.message.reply_text(
             "⚠️ Enter the attack arguments: <ip> <port> <duration> <threads>\n\n"
@@ -735,7 +545,6 @@ async def attack_start(update: Update, context: CallbackContext):
         )
         return ConversationHandler.END
 
-# Attack Command - Handle Attack Input
 async def attack_input(update: Update, context: CallbackContext):
     global last_attack_time, running_attacks
 
@@ -759,13 +568,8 @@ async def attack_input(update: Update, context: CallbackContext):
         if isinstance(redeemed_users[user_id], dict) and redeemed_users[user_id].get('is_special'):
             is_special = True
     
-    # Determine maximum allowed values
-    if is_special:
-        max_allowed_duration = SPECIAL_MAX_DURATION
-        max_allowed_threads = SPECIAL_MAX_THREADS
-    else:
-        max_allowed_duration = max_duration
-        max_allowed_threads = MAX_THREADS
+    max_allowed_duration = SPECIAL_MAX_DURATION if is_special else max_duration
+    max_allowed_threads = SPECIAL_MAX_THREADS if is_special else MAX_THREADS
 
     if duration > max_allowed_duration:
         await update.message.reply_text(
@@ -784,10 +588,9 @@ async def attack_input(update: Update, context: CallbackContext):
         return ConversationHandler.END
 
     last_attack_time = time.time()
-    
     attack_id = f"{ip}:{port}-{time.time()}"
     running_attacks[attack_id] = {
-        'user_id': update.effective_user.id,
+        'user_id': user_id,
         'start_time': time.time(),
         'duration': duration,
         'is_special': is_special
@@ -801,7 +604,7 @@ async def attack_input(update: Update, context: CallbackContext):
         f"🕒 Duration: {duration} sec\n"
         f"🧵 Threads: {threads}\n\n"
         f"👑 Bot Owner: @Riyahacksyt\n\n"
-        f"🔥 Attack is now running!",
+        "🔥 Attack is now running!",
         parse_mode='Markdown'
     )
 
@@ -825,7 +628,7 @@ async def attack_input(update: Update, context: CallbackContext):
                     f"🕒 Duration: {duration} sec\n"
                     f"🧵 Threads: {threads}\n\n"
                     f"👑 Bot Owner: @Riyahacksyt\n\n"
-                    f"🔥 Attack completed successfully!",
+                    "🔥 Attack completed successfully!",
                     parse_mode='Markdown'
                 )
             else:
@@ -851,10 +654,8 @@ async def attack_input(update: Update, context: CallbackContext):
             )
 
     asyncio.create_task(run_attack())
-
     return ConversationHandler.END
 
-# Set Cooldown Command - Start Conversation
 async def set_cooldown_start(update: Update, context: CallbackContext):
     if not is_owner(update):
         await update.message.reply_text(
@@ -871,7 +672,6 @@ async def set_cooldown_start(update: Update, context: CallbackContext):
     )
     return GET_SET_COOLDOWN
 
-# Set Cooldown Command - Handle Cooldown Input
 async def set_cooldown_input(update: Update, context: CallbackContext):
     global global_cooldown
 
@@ -891,7 +691,6 @@ async def set_cooldown_input(update: Update, context: CallbackContext):
         return ConversationHandler.END
     return ConversationHandler.END
 
-# Show Active, Redeemed, and Expired Keys
 async def show_keys(update: Update, context: CallbackContext):
     if not (is_owner(update) or is_reseller(update)):
         await update.message.reply_text(
@@ -976,7 +775,6 @@ async def show_keys(update: Update, context: CallbackContext):
 
     await update.message.reply_text(message, parse_mode='Markdown')
 
-# Set Duration Command - Start Conversation
 async def set_duration_start(update: Update, context: CallbackContext):
     if not is_owner(update):
         await update.message.reply_text(
@@ -993,7 +791,6 @@ async def set_duration_start(update: Update, context: CallbackContext):
     )
     return GET_SET_DURATION
 
-# Set Duration Command - Handle Duration Input
 async def set_duration_input(update: Update, context: CallbackContext):
     global max_duration
     try:
@@ -1012,7 +809,6 @@ async def set_duration_input(update: Update, context: CallbackContext):
         return ConversationHandler.END
     return ConversationHandler.END
 
-# Set Threads Command - Start Conversation
 async def set_threads_start(update: Update, context: CallbackContext):
     if not is_owner(update):
         await update.message.reply_text(
@@ -1029,7 +825,6 @@ async def set_threads_start(update: Update, context: CallbackContext):
     )
     return GET_SET_THREADS
 
-# Set Threads Command - Handle Threads Input
 async def set_threads_input(update: Update, context: CallbackContext):
     global MAX_THREADS
     try:
@@ -1048,7 +843,6 @@ async def set_threads_input(update: Update, context: CallbackContext):
         return ConversationHandler.END
     return ConversationHandler.END
 
-# Delete Key Command - Start Conversation
 async def delete_key_start(update: Update, context: CallbackContext):
     if not is_owner(update):
         await update.message.reply_text(
@@ -1065,7 +859,6 @@ async def delete_key_start(update: Update, context: CallbackContext):
     )
     return GET_DELETE_KEY
 
-# Delete Key Command - Handle Key Input
 async def delete_key_input(update: Update, context: CallbackContext):
     key = update.message.text
 
@@ -1105,7 +898,6 @@ async def delete_key_input(update: Update, context: CallbackContext):
     save_keys()
     return ConversationHandler.END
 
-# Add Reseller Command - Start Conversation
 async def add_reseller_start(update: Update, context: CallbackContext):
     if not is_owner(update):
         await update.message.reply_text(
@@ -1122,7 +914,6 @@ async def add_reseller_start(update: Update, context: CallbackContext):
     )
     return GET_RESELLER_ID
 
-# Add Reseller Command - Handle User ID Input
 async def add_reseller_input(update: Update, context: CallbackContext):
     user_id_str = update.message.text
 
@@ -1145,7 +936,6 @@ async def add_reseller_input(update: Update, context: CallbackContext):
 
     return ConversationHandler.END
 
-# Remove Reseller Command - Start Conversation
 async def remove_reseller_start(update: Update, context: CallbackContext):
     if not is_owner(update):
         await update.message.reply_text(
@@ -1162,7 +952,6 @@ async def remove_reseller_start(update: Update, context: CallbackContext):
     )
     return GET_REMOVE_RESELLER_ID
 
-# Remove Reseller Command - Handle User ID Input
 async def remove_reseller_input(update: Update, context: CallbackContext):
     user_id_str = update.message.text
 
@@ -1193,7 +982,6 @@ async def remove_reseller_input(update: Update, context: CallbackContext):
 
     return ConversationHandler.END
 
-# Add Coin Command - Start Conversation
 async def add_coin_start(update: Update, context: CallbackContext):
     if not is_owner(update):
         await update.message.reply_text(
@@ -1210,7 +998,6 @@ async def add_coin_start(update: Update, context: CallbackContext):
     )
     return GET_ADD_COIN_USER_ID
 
-# Add Coin Command - Handle User ID Input
 async def add_coin_user_id(update: Update, context: CallbackContext):
     user_id_str = update.message.text
 
@@ -1241,7 +1028,6 @@ async def add_coin_user_id(update: Update, context: CallbackContext):
 
     return ConversationHandler.END
 
-# Add Coin Command - Handle Amount Input
 async def add_coin_amount(update: Update, context: CallbackContext):
     amount_str = update.message.text
 
@@ -1271,7 +1057,6 @@ async def add_coin_amount(update: Update, context: CallbackContext):
 
     return ConversationHandler.END
 
-# Balance Command
 async def balance(update: Update, context: CallbackContext):
     if not is_reseller(update):
         await update.message.reply_text(
@@ -1290,7 +1075,6 @@ async def balance(update: Update, context: CallbackContext):
         parse_mode='Markdown'
     )
 
-# Handle Photo Feedback
 async def handle_photo(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
     if user_id in feedback_waiting:
@@ -1301,7 +1085,6 @@ async def handle_photo(update: Update, context: CallbackContext):
             parse_mode='Markdown'
         )
 
-# Check Key Status Command
 async def check_key_status(update: Update, context: CallbackContext):
     if not is_allowed_group(update):
         await update.message.reply_text(
@@ -1401,7 +1184,6 @@ async def check_key_status(update: Update, context: CallbackContext):
 
     await update.message.reply_text(status_message, parse_mode='Markdown')
 
-# Cancel Current Conversation
 async def cancel_conversation(update: Update, context: CallbackContext):
     await update.message.reply_text(
         "❌ Current process canceled.\n\n"
@@ -1410,7 +1192,6 @@ async def cancel_conversation(update: Update, context: CallbackContext):
     )
     return ConversationHandler.END
 
-# Rules Command
 async def rules(update: Update, context: CallbackContext):
     rules_text = (
         "📜 Rules:\n\n"
@@ -1426,7 +1207,6 @@ async def rules(update: Update, context: CallbackContext):
     )
     await update.message.reply_text(rules_text, parse_mode='Markdown')
 
-# Handle Button Clicks
 async def handle_button_click(update: Update, context: CallbackContext):
     chat = update.effective_chat
     query = update.message.text
@@ -1495,7 +1275,6 @@ async def handle_button_click(update: Update, context: CallbackContext):
                 reply_markup=owner_markup
             )
 
-# Periodic Task to Check for Expired Keys
 async def check_expired_keys(context: CallbackContext):
     current_time = time.time()
     expired_users = []
@@ -1517,7 +1296,6 @@ async def check_expired_keys(context: CallbackContext):
     save_keys()
     logging.info(f"Expired users and keys removed: {expired_users}")
 
-# Main Bot Setup
 def main():
     load_keys()
 
@@ -1525,7 +1303,6 @@ def main():
 
     application.job_queue.run_repeating(check_expired_keys, interval=60, first=0)
 
-    # Add conversation handlers
     generate_key_handler = ConversationHandler(
         entry_points=[CommandHandler("generatekey", generate_key_start), MessageHandler(filters.Text("Generate Key"), generate_key_start)],
         states={
@@ -1616,7 +1393,6 @@ def main():
         fallbacks=[CommandHandler("cancel", cancel_conversation)],
     )
 
-    # Add all handlers
     application.add_handler(generate_key_handler)
     application.add_handler(redeem_key_handler)
     application.add_handler(attack_handler)
