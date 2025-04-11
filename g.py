@@ -119,50 +119,59 @@ GET_SPECIAL_KEY_DURATION = 12
 GET_SPECIAL_KEY_FORMAT = 13
 
 def load_keys():
+    global keys, special_keys, redeemed_users, redeemed_keys_info
+    
     if not os.path.exists(KEY_FILE):
         return
 
     with open(KEY_FILE, "r") as file:
         for line in file:
-            key_type, key_data = line.strip().split(":", 1)
-            if key_type == "ACTIVE_KEY":
-                parts = key_data.split(",")
-                if len(parts) == 2:
-                    key, expiration_time = parts
-                    keys[key] = {
-                        'expiration_time': float(expiration_time),
-                        'generated_by': None
+            line = line.strip()
+            if not line:
+                continue
+                
+            try:
+                key_type, key_data = line.split(":", 1)
+                if key_type == "ACTIVE_KEY":
+                    parts = key_data.split(",")
+                    if len(parts) == 2:
+                        key, expiration_time = parts
+                        keys[key] = {
+                            'expiration_time': float(expiration_time),
+                            'generated_by': None
+                        }
+                    elif len(parts) == 3:
+                        key, expiration_time, generated_by = parts
+                        keys[key] = {
+                            'expiration_time': float(expiration_time),
+                            'generated_by': int(generated_by)
+                        }
+                elif key_type == "REDEEMED_KEY":
+                    key, generated_by, redeemed_by, expiration_time = key_data.split(",")
+                    redeemed_users[int(redeemed_by)] = float(expiration_time)
+                    redeemed_keys_info[key] = {
+                        'generated_by': int(generated_by),
+                        'redeemed_by': int(redeemed_by)
                     }
-                elif len(parts) == 3:
-                    key, expiration_time, generated_by = parts
-                    keys[key] = {
+                elif key_type == "SPECIAL_KEY":
+                    key, expiration_time, generated_by = key_data.split(",")
+                    special_keys[key] = {
                         'expiration_time': float(expiration_time),
                         'generated_by': int(generated_by)
                     }
-            elif key_type == "REDEEMED_KEY":
-                key, generated_by, redeemed_by, expiration_time = key_data.split(",")
-                redeemed_users[int(redeemed_by)] = float(expiration_time)
-                redeemed_keys_info[key] = {
-                    'generated_by': int(generated_by),
-                    'redeemed_by': int(redeemed_by)
-                }
-            elif key_type == "SPECIAL_KEY":
-                key, expiration_time, generated_by = key_data.split(",")
-                special_keys[key] = {
-                    'expiration_time': float(expiration_time),
-                    'generated_by': int(generated_by)
-                }
-            elif key_type == "REDEEMED_SPECIAL_KEY":
-                key, generated_by, redeemed_by, expiration_time = key_data.split(",")
-                redeemed_users[int(redeemed_by)] = {
-                    'expiration_time': float(expiration_time),
-                    'is_special': True
-                }
-                redeemed_keys_info[key] = {
-                    'generated_by': int(generated_by),
-                    'redeemed_by': int(redeemed_by),
-                    'is_special': True
-                }
+                elif key_type == "REDEEMED_SPECIAL_KEY":
+                    key, generated_by, redeemed_by, expiration_time = key_data.split(",")
+                    redeemed_users[int(redeemed_by)] = {
+                        'expiration_time': float(expiration_time),
+                        'is_special': True
+                    }
+                    redeemed_keys_info[key] = {
+                        'generated_by': int(generated_by),
+                        'redeemed_by': int(redeemed_by),
+                        'is_special': True
+                    }
+            except Exception as e:
+                logging.error(f"Error loading key line: {line}. Error: {str(e)}")
 
 def save_keys():
     with open(KEY_FILE, "w") as file:
@@ -185,14 +194,18 @@ def save_keys():
                     file.write(f"REDEEMED_KEY:{key},{key_info['generated_by']},{key_info['redeemed_by']},{redeemed_users[key_info['redeemed_by']]}\n")
 
 def is_allowed_group(update: Update):
+    if not update.effective_chat:
+        return False
     chat = update.effective_chat
     return chat.type in ['group', 'supergroup'] and chat.id == ALLOWED_GROUP_ID
 
 def is_owner(update: Update):
-    return update.effective_user.username == OWNER_USERNAME
+    user = update.effective_user
+    return user and user.username == OWNER_USERNAME
 
 def is_reseller(update: Update):
-    return update.effective_user.id in resellers
+    user = update.effective_user
+    return user and user.id in resellers
 
 def is_authorized_user(update: Update):
     return is_owner(update) or is_reseller(update)
@@ -291,7 +304,7 @@ async def generate_key_start(update: Update, context: CallbackContext):
     return GET_DURATION
 
 async def generate_key_duration(update: Update, context: CallbackContext):
-    duration_str = update.message.text
+    duration_str = update.message.text.upper()
 
     if duration_str not in KEY_PRICES:
         await update.message.reply_text(
@@ -440,7 +453,7 @@ async def redeem_key_start(update: Update, context: CallbackContext):
     return GET_KEY
 
 async def redeem_key_input(update: Update, context: CallbackContext):
-    key = update.message.text
+    key = update.message.text.strip()
 
     if key in keys and keys[key]['expiration_time'] > time.time():
         user_id = update.effective_user.id
@@ -524,7 +537,7 @@ async def attack_start(update: Update, context: CallbackContext):
         return ConversationHandler.END
 
     user_id = update.effective_user.id
-    has_special_key = user_id in redeemed_users and (isinstance(redeemed_users[user_id], dict) and redeemed_users[user_id].get('is_special'))
+    has_special_key = user_id in redeemed_users and (isinstance(redeemed_users[user_id], dict) and redeemed_users[user_id].get('is_special')
     
     if bot_open or user_id in redeemed_users:
         await update.message.reply_text(
@@ -557,9 +570,18 @@ async def attack_input(update: Update, context: CallbackContext):
         )
         return ConversationHandler.END
 
-    ip, port, duration, threads = args
-    duration = int(duration)
-    threads = int(threads)
+    try:
+        ip = args[0]
+        port = int(args[1])
+        duration = int(args[2])
+        threads = int(args[3])
+    except ValueError:
+        await update.message.reply_text(
+            "❌ Invalid input! Port, duration and threads must be numbers.\n\n"
+            "👑 Owner: @Riyahacksyt",
+            parse_mode='Markdown'
+        )
+        return ConversationHandler.END
 
     user_id = update.effective_user.id
     is_special = False
@@ -760,16 +782,16 @@ async def show_keys(update: Update, context: CallbackContext):
             else:
                 redeemed_keys.append(f"🔑 `{escape_markdown(key, version=2)}` (Generated by @{generated_by_username}, Redeemed by @{redeemed_by_username})")
 
-     message = (
-        "*🗝️ Active Regular Keys:*\n" +
-        ('\n'.join(active_keys) if active_keys else 'No active regular keys found.') + "\n\n" +
-        "*💎 Active Special Keys:*\n" +
-        ('\n'.join(active_special_keys) if active_special_keys else 'No active special keys found.') + "\n\n" +
-        "*🗝️ Redeemed Keys:*\n" +
-        ('\n'.join(redeemed_keys) if redeemed_keys else 'No redeemed keys found.') + "\n\n" +
-        "*🗝️ Expired Keys:*\n" +
-        ('\n'.join(expired_keys) if expired_keys else 'No expired keys found.') + "\n\n" +
-        "👑 Owner: @Riyahacksyt\n" +
+    message = (
+        "*🗝️ Active Regular Keys:*\n"
+        f"{'\n'.join(active_keys) if active_keys else 'No active regular keys found.'}\n\n"
+        "*💎 Active Special Keys:*\n"
+        f"{'\n'.join(active_special_keys) if active_special_keys else 'No active special keys found.'}\n\n"
+        "*🗝️ Redeemed Keys:*\n"
+        f"{'\n'.join(redeemed_keys) if redeemed_keys else 'No redeemed keys found.'}\n\n"
+        "*🗝️ Expired Keys:*\n"
+        f"{'\n'.join(expired_keys) if expired_keys else 'No expired keys found.'}\n\n"
+        "👑 Owner: @Riyahacksyt\n"
         "🔑 DM for keys: @Riyahacksyt"
     )
 
@@ -1304,7 +1326,7 @@ def main():
     application.job_queue.run_repeating(check_expired_keys, interval=60, first=0)
 
     generate_key_handler = ConversationHandler(
-        entry_points=[CommandHandler("generatekey", generate_key_start), MessageHandler(filters.Text("Generate Key"), generate_key_start)],
+        entry_points=[CommandHandler("generatekey", generate_key_start), MessageHandler(filters.TEXT & filters.Regex('^Generate Key$'), generate_key_start)],
         states={
             GET_DURATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, generate_key_duration)],
         },
@@ -1312,7 +1334,7 @@ def main():
     )
 
     redeem_key_handler = ConversationHandler(
-        entry_points=[CommandHandler("redeemkey", redeem_key_start), MessageHandler(filters.Text("Redeem Key"), redeem_key_start)],
+        entry_points=[CommandHandler("redeemkey", redeem_key_start), MessageHandler(filters.TEXT & filters.Regex('^Redeem Key$'), redeem_key_start)],
         states={
             GET_KEY: [MessageHandler(filters.TEXT & ~filters.COMMAND, redeem_key_input)],
         },
@@ -1320,7 +1342,7 @@ def main():
     )
 
     attack_handler = ConversationHandler(
-        entry_points=[CommandHandler("attack", attack_start), MessageHandler(filters.Text("Attack"), attack_start)],
+        entry_points=[CommandHandler("attack", attack_start), MessageHandler(filters.TEXT & filters.Regex('^Attack$'), attack_start)],
         states={
             GET_ATTACK_ARGS: [MessageHandler(filters.TEXT & ~filters.COMMAND, attack_input)],
         },
@@ -1328,7 +1350,7 @@ def main():
     )
 
     set_duration_handler = ConversationHandler(
-        entry_points=[CommandHandler("setduration", set_duration_start), MessageHandler(filters.Text("Set Duration"), set_duration_start)],
+        entry_points=[CommandHandler("setduration", set_duration_start), MessageHandler(filters.TEXT & filters.Regex('^Set Duration$'), set_duration_start)],
         states={
             GET_SET_DURATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_duration_input)],
         },
@@ -1336,7 +1358,7 @@ def main():
     )
 
     set_threads_handler = ConversationHandler(
-        entry_points=[CommandHandler("set_threads", set_threads_start), MessageHandler(filters.Text("Set Threads"), set_threads_start)],
+        entry_points=[CommandHandler("setthreads", set_threads_start), MessageHandler(filters.TEXT & filters.Regex('^Set Threads$'), set_threads_start)],
         states={
             GET_SET_THREADS: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_threads_input)],
         },
@@ -1344,7 +1366,7 @@ def main():
     )
 
     delete_key_handler = ConversationHandler(
-        entry_points=[CommandHandler("deletekey", delete_key_start), MessageHandler(filters.Text("Delete Key"), delete_key_start)],
+        entry_points=[CommandHandler("deletekey", delete_key_start), MessageHandler(filters.TEXT & filters.Regex('^Delete Key$'), delete_key_start)],
         states={
             GET_DELETE_KEY: [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_key_input)],
         },
@@ -1352,7 +1374,7 @@ def main():
     )
 
     add_reseller_handler = ConversationHandler(
-        entry_points=[CommandHandler("addreseller", add_reseller_start), MessageHandler(filters.Text("Add Reseller"), add_reseller_start)],
+        entry_points=[CommandHandler("addreseller", add_reseller_start), MessageHandler(filters.TEXT & filters.Regex('^Add Reseller$'), add_reseller_start)],
         states={
             GET_RESELLER_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_reseller_input)],
         },
@@ -1360,7 +1382,7 @@ def main():
     )
 
     remove_reseller_handler = ConversationHandler(
-        entry_points=[CommandHandler("removereseller", remove_reseller_start), MessageHandler(filters.Text("Remove Reseller"), remove_reseller_start)],
+        entry_points=[CommandHandler("removereseller", remove_reseller_start), MessageHandler(filters.TEXT & filters.Regex('^Remove Reseller$'), remove_reseller_start)],
         states={
             GET_REMOVE_RESELLER_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, remove_reseller_input)],
         },
@@ -1368,7 +1390,7 @@ def main():
     )
 
     add_coin_handler = ConversationHandler(
-        entry_points=[CommandHandler("addcoin", add_coin_start), MessageHandler(filters.Text("Add Coin"), add_coin_start)],
+        entry_points=[CommandHandler("addcoin", add_coin_start), MessageHandler(filters.TEXT & filters.Regex('^Add Coin$'), add_coin_start)],
         states={
             GET_ADD_COIN_USER_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_coin_user_id)],
             GET_ADD_COIN_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_coin_amount)],
@@ -1377,7 +1399,7 @@ def main():
     )
 
     set_cooldown_handler = ConversationHandler(
-        entry_points=[CommandHandler("setcooldown", set_cooldown_start), MessageHandler(filters.Text("Set Cooldown"), set_cooldown_start)],
+        entry_points=[CommandHandler("setcooldown", set_cooldown_start), MessageHandler(filters.TEXT & filters.Regex('^Set Cooldown$'), set_cooldown_start)],
         states={
             GET_SET_COOLDOWN: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_cooldown_input)],
         },
@@ -1385,7 +1407,7 @@ def main():
     )
 
     special_key_handler = ConversationHandler(
-        entry_points=[MessageHandler(filters.Text("🔑 Special Key"), generate_special_key_start)],
+        entry_points=[MessageHandler(filters.TEXT & filters.Regex('^🔑 Special Key$'), generate_special_key_start)],
         states={
             GET_SPECIAL_KEY_DURATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, generate_special_key_duration)],
             GET_SPECIAL_KEY_FORMAT: [MessageHandler(filters.TEXT & ~filters.COMMAND, generate_special_key_format)],
