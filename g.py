@@ -960,13 +960,13 @@ async def show_keys(update: Update, context: CallbackContext):
 
     message = (
         "*🗝️ Active Regular Keys:*\n"
-        f"{'\n'.join(active_keys) if active_keys else 'No active regular keys found.'}\n\n"
+        "{'\n'.join(active_keys) if active_keys else 'No active regular keys found.'}\n\n"
         "*💎 Active Special Keys:*\n"
-        f"{'\n'.join(active_special_keys) if active_special_keys else 'No active special keys found.'}\n\n"
+        "{'\n'.join(active_special_keys) if active_special_keys else 'No active special keys found.'}\n\n"
         "*🗝️ Redeemed Keys:*\n"
-        f"{'\n'.join(redeemed_keys) if redeemed_keys else 'No redeemed keys found.'}\n\n"
+        "{'\n'.join(redeemed_keys) if redeemed_keys else 'No redeemed keys found.'}\n\n"
         "*🗝️ Expired Keys:*\n"
-        f"{'\n'.join(expired_keys) if expired_keys else 'No expired keys found.'}\n\n"
+        "{'\n'.join(expired_keys) if expired_keys else 'No expired keys found.'}\n\n"
         "👑 *Owner:* @Riyahacksyt\n"
         "🔑 *DM for keys:* @Riyahacksyt"
     )
